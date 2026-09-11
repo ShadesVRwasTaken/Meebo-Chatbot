@@ -236,6 +236,27 @@ outline: none;
 input[type=text]:focus {
 border-color: var(--accent-color);
 }
+#mic-btn {
+padding: 0 16px;
+border-radius: 8px;
+border: 1px solid var(--border-color);
+background: var(--bubble-meebo);
+color: white;
+cursor: pointer;
+font-size: 1.2rem;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+}
+#mic-btn:hover {
+background: var(--border-color);
+}
+#mic-btn.listening {
+background: #ff4444 !important;
+border-color: #ff5555 !important;
+animation: pulse 1.5s infinite;
+}
 #send-btn {
 padding: 0 24px;
 border-radius: 8px;
@@ -307,9 +328,13 @@ border-radius: 4px;
 cursor: pointer;
 background: none;
 }
+@keyframes pulse {
+0% { transform: scale(1); }
+50% { transform: scale(1.05); }
+100% { transform: scale(1); }
+}
 </style>
 </head>
-
 <body>
 
 <div class="container">
@@ -374,6 +399,7 @@ background: none;
 
 <div id="input-area">
 <input type="text" id="user-input" placeholder="Type a message to Meebo..." autocomplete="off">
+<button id="mic-btn" title="Talk to Meebo">🎙️</button>
 <button id="send-btn">Send</button>
 </div>
 </div>
@@ -409,5 +435,3 @@ background: none;
 <script src="meebo.js"></script>
 </body>
 </html>
-
-

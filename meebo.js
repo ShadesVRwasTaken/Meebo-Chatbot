@@ -2,6 +2,7 @@
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
+const micBtn = document.getElementById('mic-btn');
 const downloadBtn = document.getElementById('download-btn');
 const vocabCount = document.getElementById('vocab-count');
 const modeSelect = document.getElementById('mode-select');
@@ -27,6 +28,16 @@ const colorBubble = document.getElementById('color-bubble');
 let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
+
+// Web Speech API Instantiation
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+}
 
 const themesMap = {
 emerald: { main: "#1a1a24", panel: "#242432", border: "#2e2e3f", accent: "#0ebd84", hover: "#0cb37d", bubble: "#333344", txt: "#f1f1f1" },
@@ -154,7 +165,6 @@ localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
 activeBrainId = "default"; rebuildBrainDropdown(); loadActiveBrain(); appendMessage("System", "Selected custom brain profile purged from device.", "system-msg");
 });
 
-// meebo.js - Part 2: Structural Cases, Learning Triggers & Conversation Flow Filters
 async function loadActiveBrain() {
 const savedData = localStorage.getItem(`meebo_profile_${activeBrainId}`);
 if (savedData) {
@@ -189,27 +199,22 @@ const msgDiv = document.createElement('div'); msgDiv.className = `msg ${classNam
 chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// 🧠 UPGRADED: Keeps Case, Comma and Punctuation spacing arrays intact!
 function learnFromSentence(text) {
 if (text.toLowerCase().trim() === "meebo wipe memory") return;
-
-// Split by spacing but keep case, punctuation, and markers intact
 const words = text.trim().split(/\s+/);
 if (words.length < 2) return;
 
-// Chaotic Mode Paths (Use clean lower casing ONLY for lookup key indices)
 for (let i = 0; i < words.length - 1; i++) {
 const currentWord = words[i].toLowerCase();
-const nextWord = words[i + 1]; // Preserves target capitalization
+const nextWord = words[i + 1];
 if (!currentBrainData.chaotic[currentWord]) currentBrainData.chaotic[currentWord] = [];
 if (!currentBrainData.chaotic[currentWord].includes(nextWord)) currentBrainData.chaotic[currentWord].push(nextWord);
 }
 
-// Grammar Mode Paths
 if (words.length >= 3) {
 for (let i = 0; i < words.length - 2; i++) {
 const currentPair = `${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`;
-const nextWord = words[i + 2]; // Preserves proper grammar endings
+const nextWord = words[i + 2];
 if (!currentBrainData.grammar[currentPair]) currentBrainData.grammar[currentPair] = [];
 if (!currentBrainData.grammar[currentPair].includes(nextWord)) currentBrainData.grammar[currentPair].push(nextWord);
 }
@@ -234,9 +239,8 @@ const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)]
 sentence.push(nextWord);
 wordPointer = nextWord.toLowerCase();
 }
-// Capitalize the first word of the output phrase beautifully
-sentence[0] = sentence[0].charAt(0).toUpperCase() + sentence[0].slice(1);
-return sentence.join(" ");
+let outStr = sentence.join(" ");
+return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
 function generateGrammarReply(words) {
@@ -266,8 +270,8 @@ const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)]
 sentence.push(nextWord);
 key1 = key2; key2 = nextWord.toLowerCase();
 }
-sentence[0] = sentence[0].charAt(0).toUpperCase() + sentence[0].slice(1);
-return sentence.join(" ");
+let outStr = sentence.join(" ");
+return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
 function handleWipe() {
@@ -282,16 +286,8 @@ appendMessage("You", text, "user-msg"); userInput.value = "";
 if (text.toLowerCase() === "meebo wipe memory") { handleWipe(); return; }
 
 const strategy = learnSelect.value;
-
-// 🎛️ PROCESS STRATEGY SELECTION
-if (strategy === "adaptive" || strategy === "silent") {
-learnFromSentence(text);
-}
-
-if (strategy === "silent") {
-// Silent profile means learning occurs, but response tracking is muted
-return;
-}
+if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
+if (strategy === "silent") return;
 
 const isAskingQuestion = text.endsWith("?");
 const mentionedName = text.toLowerCase().includes("meebo");
@@ -311,6 +307,47 @@ if (vocabCount && currentBrainData) {
 const mode = modeSelect.value; const target = currentBrainData[mode] || {};
 vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 }
+}
+
+// 🎙️ Speech Recognition Event Handlers
+if (recognition) {
+    micBtn.addEventListener('click', () => {
+        if (micBtn.classList.contains('listening')) {
+            recognition.stop();
+        } else {
+            userInput.value = "";
+            userInput.placeholder = "Listening to your voice...";
+            micBtn.classList.add('listening');
+            micBtn.innerText = "🛑";
+            recognition.start();
+        }
+    });
+
+    recognition.onresult = (event) => {
+        userInput.value = event.results[0][0].transcript;
+    };
+
+    recognition.onspeechend = () => { recognition.stop(); };
+
+    recognition.onend = () => {
+        micBtn.classList.remove('listening');
+        micBtn.innerText = "🎙️";
+        userInput.placeholder = "Type a message to Meebo...";
+        if (userInput.value.trim() !== "") handleSend();
+    };
+
+    recognition.onerror = (e) => {
+        console.error("Speech API Error: ", e.error);
+        micBtn.classList.remove('listening');
+        micBtn.innerText = "🎙️";
+        userInput.placeholder = "Type a message to Meebo...";
+    };
+} else {
+    micBtn.style.opacity = "0.4";
+    micBtn.title = "Voice recognition not supported on this browser";
+    micBtn.addEventListener('click', () => {
+        alert("Your current browser doesn't support the Web Speech API. Try Chrome or Edge!");
+    });
 }
 
 brainUpload.addEventListener('change', (event) => {
@@ -339,9 +376,18 @@ downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document
 downloadAnchor.click(); downloadAnchor.remove();
 });
 
+toggleExplorerBtn.addEventListener('click', () => {
+    if (explorerContainer.style.display === "block") {
+        explorerContainer.style.display = "none";
+        toggleExplorerBtn.innerText = "🔍 View Brain";
+    } else {
+        explorerContainer.style.display = "block";
+        toggleExplorerBtn.innerText = "🙈 Hide Brain";
+        renderBrainExplorer();
+    }
+});
+
 sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
 loadIndex(); loadSavedThemeSettings(); loadActiveBrain();
-
-
