@@ -75,22 +75,32 @@ function handleSend() {
 const text = userInput.value.trim();
 if (!text) return;
 
+// 1. Show your message on the screen
 appendMessage("You", text, "user-msg");
 userInput.value = "";
 
+// 2. Check for the Emergency Wipe Command
 if (text.toLowerCase() === "meebo wipe memory") {
 handleWipe();
 return;
 }
 
+// 3. Meebo learns from the sentence in the background
 learnFromSentence(text);
 
+// 4. CRITICAL FIX: Only respond if "meebo" or "Meebo" is in the sentence
+if (text.toLowerCase().includes("meebo")) {
 setTimeout(() => {
 const reply = generateReply(text);
 appendMessage("Meebo", reply, "meebo-msg");
 }, 500);
+} else {
+// Meebo stays silent because his name wasn't mentioned!
+console.log("Meebo learned your words silently in the background.");
+}
 }
 
+// Keep the event listeners at the very bottom the same
 sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
