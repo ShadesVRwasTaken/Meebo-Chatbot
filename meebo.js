@@ -1,9 +1,10 @@
-// meebo.js - Part 1: Brain Profiles, Registry Toggles & Theme Customization Loops
+// meebo.js - Part 1: Elements, State & Voice Initialization
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const micBtn = document.getElementById('mic-btn');
 const ttsToggle = document.getElementById('tts-toggle');
+const emotionToggle = document.getElementById('emotion-toggle');
 const downloadBtn = document.getElementById('download-btn');
 const vocabCount = document.getElementById('vocab-count');
 const modeSelect = document.getElementById('mode-select');
@@ -126,27 +127,6 @@ brainSelect.appendChild(option);
 });
 }
 
-function renderBrainExplorer() {
-const selectedMode = modeSelect.value;
-const targetData = currentBrainData[selectedMode] || {};
-const keys = Object.keys(targetData).sort();
-
-if (keys.length === 0) {
-explorerContainer.innerHTML = `<div style="color: #8a8a9e; font-style: italic; padding: 5px;">The [${selectedMode}] JSON dictionary is currently empty. Type to add paths!</div>`;
-return;
-}
-explorerContainer.innerHTML = `<div style="color: #8a8a9e; margin-bottom: 8px; font-weight: bold; font-family: monospace;">json_structure: brain.${selectedMode}</div>`;
-keys.forEach(key => {
-const nodeDiv = document.createElement('div'); nodeDiv.className = 'brain-node';
-const keySpan = document.createElement('span'); keySpan.className = 'brain-key';
-const formattedKey = key.includes('__') ? `"${key.replace(/__/g, ' ')}"` : `"${key}"`;
-keySpan.innerText = `${formattedKey}: `;
-const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-values'; valuesDiv.innerText = JSON.stringify(targetData[key]);
-keySpan.addEventListener('click', () => nodeDiv.classList.toggle('expanded'));
-nodeDiv.appendChild(keySpan); nodeDiv.appendChild(valuesDiv); explorerContainer.appendChild(nodeDiv);
-});
-}
-
 renameBrainBtn.addEventListener('click', () => {
 if (activeBrainId === "default") { alert("The baseline 'Default Brain' cannot be renamed."); return; }
 const newName = prompt(`Enter a new name for "${activeBrainId}":`, activeBrainId);
@@ -196,6 +176,27 @@ brainIndexList.push(activeBrainId);
 localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
 rebuildBrainDropdown();
 }
+}
+
+function renderBrainExplorer() {
+const selectedMode = modeSelect.value;
+const targetData = currentBrainData[selectedMode] || {};
+const keys = Object.keys(targetData).sort();
+
+if (keys.length === 0) {
+explorerContainer.innerHTML = `<div style="color: #8a8a9e; font-style: italic; padding: 5px;">The [${selectedMode}] JSON dictionary is currently empty. Type to add paths!</div>`;
+return;
+}
+explorerContainer.innerHTML = `<div style="color: #8a8a9e; margin-bottom: 8px; font-weight: bold; font-family: monospace;">json_structure: brain.${selectedMode}</div>`;
+keys.forEach(key => {
+const nodeDiv = document.createElement('div'); nodeDiv.className = 'brain-node';
+const keySpan = document.createElement('span'); keySpan.className = 'brain-key';
+const formattedKey = key.includes('__') ? `"${key.replace(/__/g, ' ')}"` : `"${key}"`;
+keySpan.innerText = `${formattedKey}: `;
+const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-values'; valuesDiv.innerText = JSON.stringify(targetData[key]);
+keySpan.addEventListener('click', () => nodeDiv.classList.toggle('expanded'));
+nodeDiv.appendChild(keySpan); nodeDiv.appendChild(valuesDiv); explorerContainer.appendChild(nodeDiv);
+});
 }
 
 function appendMessage(sender, text, className) {
@@ -278,15 +279,31 @@ let outStr = sentence.join(" ");
 return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
-// 🔊 True Chromebook Sci-Fi Deep Male Voice Synthesizer
-function speakMeeboText(textToSpeak) {
+function analyzeInputTone(text) {
+    const LowerText = text.toLowerCase();
+    const kindWords = ["love", "happy", "nice", "good", "great", "cool", "friend", "best", "thank", "awesome", "please", "sweet", "calm", "slow"];
+    const angryWords = ["hate", "mad", "angry", "stop", "bad", "worst", "broken", "dumb", "stupid", "annoying", "loud", "fast", "shut", "kill"];
+    
+    let score = 0;
+    kindWords.forEach(w => { if(LowerText.includes(w)) score++; });
+    angryWords.forEach(w => { if(LowerText.includes(w)) score--; });
+    
+    if (text === text.toUpperCase() && text.replace(/[^a-zA-Z]/g, "").length > 3) {
+        score -= 2;
+    }
+    
+    if (score > 0) return "kind";
+    if (score < 0) return "angry";
+    return "neutral";
+}
+
+function speakMeeboText(textToSpeak, calculatedTone) {
     if ('speechSynthesis' in window && ttsToggle.checked) {
-        window.speechSynthesis.cancel(); // Prevent audio stack freezing
+        window.speechSynthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
         
-        // 🔮 Targeting deep ChromeOS baseline male vocals natively on Chromebooks
         let targetVoice = availableVoices.find(v => v.name.includes("Chrome OS US English Male"));
         if (!targetVoice) targetVoice = availableVoices.find(v => v.name.includes("Google US English Male"));
         if (!targetVoice) targetVoice = availableVoices.find(v => v.name.includes("Google US English"));
@@ -294,10 +311,18 @@ function speakMeeboText(textToSpeak) {
         
         if (targetVoice) utterance.voice = targetVoice;
         
-        // 🎛️ SCI-FI MALE MACHINE ROBOT PARAMETERS
-        utterance.rate = 0.82;   // Heavy, rhythmic mechanical pace
-        utterance.pitch = 0.35;  // Drops tone way down to unlock that baritone metallic rasp
+        let chosenRate = 0.82;
+        let chosenPitch = 0.35;
 
+        if (emotionToggle.checked) {
+            if (calculatedTone === "angry") {
+                chosenRate = 1.25; chosenPitch = 0.15;
+            } else if (calculatedTone === "kind") {
+                chosenRate = 0.75; chosenPitch = 0.55;
+            }
+        }
+        
+        utterance.rate = chosenRate; utterance.pitch = chosenPitch;
         utterance.onstart = () => { isMeeboSpeaking = true; };
         utterance.onend = () => { isMeeboSpeaking = false; };
         utterance.onerror = () => { isMeeboSpeaking = false; };
@@ -326,10 +351,19 @@ const mentionedName = text.toLowerCase().includes("meebo");
 if (isAskingQuestion || mentionedName || strategy === "adaptive") {
     setTimeout(() => {
         const words = text.trim().split(/\s+/);
-        const selectedMode = modeSelect.value;
-        const reply = selectedMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
-        appendMessage("Meebo", reply, "meebo-msg");
-        speakMeeboText(reply);
+        const currentTone = analyzeInputTone(text);
+        
+        let activeMode = modeSelect.value;
+        if (emotionToggle.checked) {
+            if (currentTone === "angry") activeMode = "chaotic";
+            if (currentTone === "kind") activeMode = "grammar";
+        }
+        
+        const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
+        let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
+        appendMessage(`Meebo${emotionLabel}`, reply, "meebo-msg");
+        
+        speakMeeboText(reply, currentTone);
     }, 500);
 }
 }
@@ -343,30 +377,23 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 
 if (recognition) {
     micBtn.addEventListener('click', () => {
-        // Fix: Removed undefined "isMeSpeaking" condition which was throwing a ReferenceError
         if (isMeeboSpeaking) return;
-        
         if (micBtn.classList.contains('listening')) {
             recognition.stop();
         } else {
-            window.speechSynthesis.cancel();
-            isMeeboSpeaking = false;
+            window.speechSynthesis.cancel(); isMeeboSpeaking = false;
             setTimeout(() => {
-                userInput.value = "";
-                userInput.placeholder = "Listening to your voice...";
-                micBtn.classList.add('listening');
-                micBtn.innerText = "🛑";
+                userInput.value = ""; userInput.placeholder = "Listening to your voice...";
+                micBtn.classList.add('listening'); micBtn.innerText = "🛑";
                 try { recognition.start(); } catch(err) {
-                    micBtn.classList.remove('listening');
-                    micBtn.innerText = "🎙️";
+                    micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
                 }
             }, 100);
         }
     });
 
     recognition.onresult = (event) => {
-        let transcript = event.results[0][0].transcript || event.results.transcript;
-        // 🔮 Auto-Scrub Chromebook Cloud Overrides
+        let transcript = event.results[0][0].transcript;
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
     };
@@ -386,7 +413,6 @@ if (recognition) {
     micBtn.addEventListener('click', () => { alert("Web Speech API not supported on this browser."); });
 }
 
-// 📦 CHROMEOBOK VOICE ARRAY CACHE WARMER LOOP
 if ('speechSynthesis' in window) {
     window.speechSynthesis.getVoices();
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -399,12 +425,12 @@ const files = event.target.files; if (!files || files.length === 0) return;
 const file = files[0]; const reader = new FileReader();
 reader.onload = function(e) {
 try {
-const uploadedJson = JSON.parse(e.target.result);
-const profileName = file.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
-if (!brainIndexList.includes(profileName)) { brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); }
-localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson));
-activeBrainId = profileName; rebuildBrainDropdown(); loadActiveBrain();
-appendMessage("System", `Successfully loaded brain: "${file.name}"`, "system-msg");
+    const uploadedJson = JSON.parse(e.target.result);
+    const profileName = file.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
+    if (!brainIndexList.includes(profileName)) { brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); }
+    localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson));
+    activeBrainId = profileName; rebuildBrainDropdown(); loadActiveBrain();
+    appendMessage("System", `Successfully loaded brain: "${file.name}"`, "system-msg");
 } catch (err) { appendMessage("System", "🔴 ERROR: Invalid JSON file structure.", "system-msg"); }
 };
 reader.readAsText(file);
