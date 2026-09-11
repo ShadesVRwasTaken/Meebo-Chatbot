@@ -3,17 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Meebo Chat</title>
+<title>Meebo Terminal</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
 
 <style>
 :root {
---bg-main: #1a1a24;
---bg-panel: #242432;
---border-color: #2e2e3f;
+--bg-main: #0b0b10;
+--bg-panel: rgba(30, 30, 45, 0.4);
+--border-color: rgba(255, 255, 255, 0.08);
 --accent-color: #0ebd84;
 --accent-hover: #0cb37d;
---bubble-meebo: #333344;
+--accent-gradient: linear-gradient(135deg, #0ebd84, #00ffcc);
+--bubble-meebo: #1e1e2d;
 --bubble-text: #f1f1f1;
 }
 
@@ -27,176 +28,277 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, A
 background-color: var(--bg-main);
 color: #ffffff;
 display: flex;
-flex-direction: column;
 height: 100vh;
-padding: 15px;
-align-items: center;
+padding: 20px;
+gap: 20px;
+overflow: hidden;
 transition: background-color 0.3s ease;
+position: relative;
 }
-.container {
-width: 100%;
-max-width: 650px;
+
+/* 🖥️ DYNAMIC GRID & WINDOW OVERRIDES */
+.sidebar {
+width: 340px;
+display: flex;
+flex-direction: column;
+gap: 15px;
+height: 100%;
+overflow-y: auto;
+transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+position: relative;
+flex-shrink: 0;
+}
+.main-chat-pane {
+flex: 1;
 display: flex;
 flex-direction: column;
 height: 100%;
+transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+position: relative;
 }
-.header-row {
+
+/* Window Expansion Modifiers */
+body.sidebar-fullscreen .main-chat-pane {
+display: none !important;
+}
+body.sidebar-fullscreen .sidebar {
+width: 100% !important;
+max-width: 100% !important;
+}
+body.chat-fullscreen .sidebar {
+width: 0px !important;
+opacity: 0 !important;
+pointer-events: none !important;
+padding: 0 !important;
+margin: 0 !important;
+}
+
+.panel-card {
+background: var(--bg-panel);
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
+border: 1px solid var(--border-color);
+border-radius: 16px;
+padding: 16px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+position: relative;
+}
+.pane-header-row {
 display: flex;
 justify-content: space-between;
 align-items: center;
 width: 100%;
-margin-bottom: 12px;
+margin-bottom: 5px;
+}
+.fullscreen-toggle-btn {
+background: transparent;
+border: none;
+color: #8a8a9e;
+font-size: 1.1rem;
+cursor: pointer;
+padding: 4px 8px;
+border-radius: 6px;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+z-index: 10;
+}
+.fullscreen-toggle-btn:hover {
+color: var(--accent-color);
+background: rgba(255, 255, 255, 0.05);
+transform: scale(1.05);
 }
 h1 {
-color: var(--accent-color);
-font-size: 1.6rem;
-font-weight: 700;
+font-size: 1.5rem;
+font-weight: 800;
+background: var(--accent-gradient);
+-webkit-background-clip: text;
+background-clip: text; /* ⚡ FIXED: Standard property explicitly declared alongside webkit vendor prefix */
+-webkit-text-fill-color: transparent;
 letter-spacing: -0.5px;
+margin-bottom: 5px;
 }
-.utility-bar {
-background: var(--bg-panel);
-padding: 14px;
-border-radius: 12px;
+h3 {
+font-size: 0.95rem;
+color: #ffffff;
 margin-bottom: 12px;
-border: 1px solid var(--border-color);
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+font-weight: 600;
+letter-spacing: 0.2px;
+}
+h4 {
+font-size: 0.8rem;
+color: #8a8a9e;
+margin-bottom: 8px;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+}
+.control-stack {
 display: flex;
 flex-direction: column;
 gap: 12px;
 }
-.row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-gap: 15px;
-flex-wrap: wrap;
-}
 .control-group {
 display: flex;
-align-items: center;
-gap: 8px;
-font-size: 0.9rem;
+flex-direction: column;
+gap: 6px;
+font-size: 0.85rem;
 color: #a0a0b5;
 }
-.action-group {
-display: flex;
-gap: 6px;
+.switch-row {
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 4px 0;
 }
 select {
-background: var(--bg-main);
-color: var(--accent-color);
+background: #141420;
+color: #ffffff;
 border: 1px solid var(--border-color);
-padding: 6px 10px;
-border-radius: 6px;
-font-weight: 600;
+padding: 8px 12px;
+border-radius: 8px;
+font-weight: 500;
 outline: none;
 cursor: pointer;
+font-size: 0.85rem;
+width: 100%;
+transition: border-color 0.2s;
 }
 select:focus {
 border-color: var(--accent-color);
 }
 
 .util-btn {
-background: var(--bubble-meebo);
+background: rgba(255, 255, 255, 0.04);
 font-size: 0.85rem;
-padding: 7px 14px;
+padding: 8px 14px;
 color: #fff;
 border: 1px solid var(--border-color);
-border-radius: 6px;
+border-radius: 8px;
 cursor: pointer;
 font-weight: 500;
 transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 6px;
+width: 100%;
 }
 .util-btn:hover {
-opacity: 0.9;
+background: rgba(255, 255, 255, 0.08);
+border-color: rgba(255, 255, 255, 0.15);
 }
-.icon-btn {
-padding: 6px 10px;
-font-size: 0.85rem;
+.btn-danger {
+background: rgba(169, 50, 52, 0.15);
+border-color: rgba(169, 50, 52, 0.3);
+color: #ff5555;
 }
-.upload-wrapper {
-position: relative;
-overflow: hidden;
-display: inline-block;
+.btn-danger:hover {
+background: rgba(169, 50, 52, 0.25);
+border-color: rgba(169, 50, 52, 0.5);
 }
-.upload-wrapper input[type=file] {
-font-size: 100px;
-position: absolute;
-left: 0;
-top: 0;
-opacity: 0;
+.action-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+}
+.emoji-panel {
+display: grid;
+grid-template-columns: repeat(6, 1fr);
+gap: 6px;
+padding: 4px;
+max-height: 110px;
+overflow-y: auto;
+background: #141420;
+border-radius: 10px;
+border: 1px solid var(--border-color);
+}
+.emoji-btn {
+background: none;
+border: none;
+font-size: 1.1rem;
 cursor: pointer;
+padding: 4px;
+border-radius: 6px;
+transition: transform 0.1s, background 0.2s;
+text-align: center;
+}
+.emoji-btn:hover {
+background: rgba(255, 255, 255, 0.05);
+transform: scale(1.15);
 }
 #brain-explorer-container {
-background: #111116;
+background: #09090f;
 border: 1px solid var(--border-color);
-border-radius: 8px;
+border-radius: 12px;
 padding: 12px;
-max-height: 200px;
+max-height: 160px;
 overflow-y: auto;
-text-align: left;
-display: none;
-font-size: 0.9rem;
+font-size: 0.8rem;
 box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+margin-top: 10px;
+display: none;
 }
 .brain-node {
 margin-bottom: 6px;
-border-bottom: 1px solid var(--bg-main);
 padding-bottom: 4px;
+border-bottom: 1px solid rgba(255,255,255,0.02);
 }
 .brain-key {
 color: var(--accent-color);
 font-weight: bold;
 cursor: pointer;
-display: inline-block;
 }
-.brain-key::before {
-content: "▶ ";
-font-size: 0.75rem;
-color: #666;
-}
-.brain-node.expanded .brain-key::before {
-content: "▼ ";
-color: var(--accent-color);
-}
+.brain-key::before { content: "▶ "; font-size: 0.7rem; color: #555; }
+.brain-node.expanded .brain-key::before { content: "▼ "; color: var(--accent-color); }
 .brain-values {
 display: none;
-margin-left: 18px;
-color: #a0a0b5;
+margin-left: 12px;
+color: #8a8a9e;
 font-family: monospace;
-background: var(--bg-main);
-padding: 4px 8px;
-border-radius: 4px;
+background: rgba(0,0,0,0.2);
+padding: 4px;
+border-radius: 6px;
 margin-top: 4px;
+word-break: break-all;
 }
-.brain-node.expanded .brain-values {
-display: block;
-}
+.brain-node.expanded .brain-values { display: block; }
 #chat-box {
 flex: 1;
 background: var(--bg-panel);
-border-radius: 12px;
-padding: 20px;
-overflow-y: auto;
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
 border: 1px solid var(--border-color);
-box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-margin-bottom: 12px;
+border-radius: 20px;
+padding: 24px;
+overflow-y: auto;
 display: flex;
 flex-direction: column;
-gap: 12px;
+gap: 16px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+margin-bottom: 16px;
+position: relative;
+}
+.chat-header-overlay {
+position: absolute;
+top: 15px;
+right: 15px;
+z-index: 15;
 }
 .msg {
-padding: 10px 14px;
-border-radius: 14px;
-max-width: 75%;
+padding: 12px 16px;
+border-radius: 16px;
+max-width: 70%;
 word-break: break-word;
 font-size: 0.95rem;
-line-height: 1.4;
-box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+line-height: 1.45;
+box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+animation: fadeIn 0.2s ease-out;
 }
 .user-msg {
-background: var(--accent-color);
-color: #fff;
+background: var(--accent-gradient);
+color: #050508;
+font-weight: 500;
 align-self: flex-end;
 border-bottom-right-radius: 4px;
 }
@@ -205,26 +307,26 @@ background: var(--bubble-meebo);
 color: var(--bubble-text);
 align-self: flex-start;
 border-bottom-left-radius: 4px;
-border: 1px solid var(--border-color);
+border: 1px solid rgba(255,255,255,0.03);
 }
 .system-msg {
-background: var(--bg-main);
-color: #8a8a9e;
+background: rgba(255, 255, 255, 0.02);
+color: #6a6a7e;
 text-align: center;
-max-width: 100%;
+max-width: 90%;
 font-family: monospace;
-font-size: 0.8rem;
+font-size: 0.75rem;
 border: 1px dashed var(--border-color);
-padding: 6px;
+padding: 6px 12px;
 align-self: center;
+border-radius: 8px;
 box-shadow: none;
 }
 #input-area {
 display: flex;
-gap: 10px;
+gap: 12px;
 width: 100%;
 }
-/* 📌 Floating Wrapper Framework for Text Overlay Visualizations */
 .input-wrapper {
 position: relative;
 flex: 1;
@@ -232,296 +334,182 @@ display: flex;
 }
 input[type=text] {
 flex: 1;
-padding: 12px 16px;
-border-radius: 8px;
+padding: 16px 20px;
+border-radius: 14px;
 border: 1px solid var(--border-color);
 background: var(--bg-panel);
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
 color: #fff;
 font-size: 0.95rem;
 outline: none;
 position: relative;
 z-index: 1;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+transition: border-color 0.2s, box-shadow 0.2s;
 }
 input[type=text]:focus {
 border-color: var(--accent-color);
+box-shadow: 0 4px 24px rgba(14, 189, 132, 0.15);
 }
 #visualizer-canvas {
 position: absolute;
-left: 2px;
-top: 2px;
+left: 2px; top: 2px;
 width: calc(100% - 4px);
 height: calc(100% - 4px);
-border-radius: 6px;
-pointer-events: none; /* Allows typing right through the waveform graphics */
+border-radius: 12px;
+pointer-events: none;
 z-index: 2;
 display: none;
 }
-#mic-btn {
-padding: 0 16px;
-border-radius: 8px;
+#mic-btn, #send-btn {
 border: 1px solid var(--border-color);
-background: var(--bubble-meebo);
 color: white;
 cursor: pointer;
-font-size: 1.2rem;
 transition: all 0.2s;
 display: flex;
 align-items: center;
 justify-content: center;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
-#mic-btn:hover {
-background: var(--border-color);
+#mic-btn {
+padding: 0 18px;
+border-radius: 14px;
+background: var(--bg-panel);
+backdrop-filter: blur(12px);
+font-size: 1.2rem;
 }
+#mic-btn:hover { background: rgba(255,255,255,0.05); }
 #mic-btn.listening {
 background: #ff4444 !important;
 border-color: #ff5555 !important;
 animation: pulse 1.5s infinite;
 }
 #send-btn {
-padding: 0 24px;
-border-radius: 8px;
+padding: 0 28px;
+border-radius: 14px;
 border: none;
-background: var(--accent-color);
-color: white;
-cursor: pointer;
-font-weight: 600;
+background: var(--accent-gradient);
+color: #050508;
+font-weight: 700;
 font-size: 0.95rem;
-transition: all 0.2s;
 }
-#send-btn:hover {
-background: var(--accent-hover);
+.upload-wrapper { position: relative; overflow: hidden; }
+.upload-wrapper input[type=file] {
+position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; width: 100%;
 }
-#vocab-count {
-color: var(--accent-color);
-}
-#settings-modal {
-display: none;
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
-background: rgba(0,0,0,0.6);
-backdrop-filter: blur(4px);
-z-index: 1000;
-align-items: center;
-justify-content: center;
-}
-.modal-content {
-background: var(--bg-panel);
-border: 1px solid var(--border-color);
-padding: 24px;
-border-radius: 16px;
-width: 90%;
-max-width: 400px;
-box-shadow: 0 10px 25px rgba(0,0,0,0.4);
-}
-.modal-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 18px;
-border-bottom: 1px solid var(--border-color);
-padding-bottom: 8px;
-}
-.theme-section {
-margin-bottom: 15px;
-text-align: left;
-}
-.theme-section h4 {
-margin-bottom: 8px;
-font-size: 0.95rem;
-color: #a0a0b5;
-}
-.color-row {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 8px;
-font-size: 0.9rem;
-}
-input[type=color] {
-border: none;
-width: 40px;
-height: 25px;
-border-radius: 4px;
-cursor: pointer;
-background: none;
-}
-.switch-wrapper {
-display: flex;
-align-items: center;
-gap: 10px;
-}
-.switch {
-position: relative;
-display: inline-block;
-width: 44px;
-height: 24px;
-}
-.switch input {
-opacity: 0;
-width: 0;
-height: 0;
-}
-.slider {
-position: absolute;
-cursor: pointer;
-top: 0; left: 0; right: 0; bottom: 0;
-background-color: var(--bubble-meebo);
-border: 1px solid var(--border-color);
-transition: .3s;
-border-radius: 24px;
-}
-.slider:before {
-position: absolute;
-content: "";
-height: 16px;
-width: 16px;
-left: 3px;
-bottom: 3px;
-background-color: #a0a0b5;
-transition: .3s;
-border-radius: 50%;
-}
-input:checked + .slider {
-background-color: rgba(14, 189, 132, 0.2);
-border-color: var(--accent-color);
-}
-input:checked + .slider:before {
-transform: translateX(20px);
-background-color: var(--accent-color);
-}
-@keyframes pulse {
-0% { transform: scale(1); }
-50% { transform: scale(1.05); }
-100% { transform: scale(1); }
-}
+.color-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #a0a0b5; }
+input[type=color] { border: none; width: 35px; height: 22px; border-radius: 4px; cursor: pointer; background: none; }
+.switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.05); border: 1px solid var(--border-color); transition: .3s; border-radius: 22px; }
+.slider:before { position: absolute; content: ""; height: 14px; width: 16px; left: 3px; bottom: 3px; background-color: #a0a0b5; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: rgba(14, 189, 132, 0.2); border-color: var(--accent-color); }
+input:checked + .slider:before { transform: translateX(16px); background-color: var(--accent-color); }
+@keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 </head>
 <body>
-<div class="container">
-<div class="header-row">
-<h1>🤖 Meebo Chat</h1>
-<button id="open-settings-btn" class="util-btn icon-btn" style="background:transparent; border:none; font-size:1.2rem;">⚙️</button>
+
+<!-- LEFT SIDEBAR CONTROL SUB-SYSTEMS -->
+<div class="sidebar" id="sidebar-node">
+    <div class="panel-card">
+        <div class="pane-header-row">
+            <h1>Meebo Terminal</h1>
+            <button class="fullscreen-toggle-btn" id="expand-sidebar-btn" title="Toggle Fullscreen Sidebar">⛶</button>
+        </div>
+        <p style="font-size: 0.75rem; color: #6a6a7e;">Firmware v2.4 • ChromeOS Base</p>
+    </div>
+
+    <div class="panel-card">
+        <h3>Configuration</h3>
+        <div class="control-stack">
+            <div class="control-group">
+                <label>Active Brain Profile</label>
+                <select id="brain-select"><option value="default">Baseline Default Brain</option></select>
+            </div>
+            <div class="action-grid">
+                <button id="rename-brain-btn" class="util-btn">✏️ Rename</button>
+                <button id="delete-brain-btn" class="util-btn btn-danger">❌ Delete</button>
+            </div>
+            <div class="upload-wrapper">
+                <button class="util-btn" style="background: rgba(30,98,208,0.15); border-color: rgba(30,98,208,0.3); color: #4ba3ff;">📂 Import JSON Brain</button>
+                <input type="file" id="brain-upload" accept=".json" />
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card">
+        <h3>Algorithmic State</h3>
+        <div class="control-stack">
+            <div class="control-group">
+                <label>Generation Execution Profile</label>
+                <select id="mode-select">
+                    <option value="grammar">Grammar (Proper)</option>
+                    <option value="chaotic">Chaotic (Random)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Ingestion Learning Profile</label>
+                <select id="learn-select">
+                    <option value="adaptive">Adaptive (Chat & Learn)</option>
+                    <option value="silent">Silent (Learn Only)</option>
+                    <option value="off">Off (Respond Only)</option>
+                </select>
+            </div>
+            <div class="color-row" style="margin-top: 4px;">
+                <span>Total Active Memory Clusters:</span>
+                <strong id="vocab-count" style="color: var(--accent-color);">0</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel-card">
+        <h3>Engine Switches</h3>
+        <div class="control-stack">
+            <div class="control-group switch-row"><span>Audio Text-to-Speech</span><label class="switch"><input type="checkbox" id="tts-toggle"><span class="slider"></span></label></div>
+            <div class="control-group switch-row"><span>Emotion Engine Loop</span><label class="switch"><input type="checkbox" id="emotion-toggle"><span class="slider"></span></label></div>
+            <div class="control-group switch-row"><span>Smart Context Anchor</span><label class="switch"><input type="checkbox" id="smart-toggle" checked><span class="slider"></span></label></div>
+        </div>
+    </div>
+
+    <!-- 😊 EMOJI SELECTOR MATRIX PANEL -->
+    <div class="panel-card">
+        <h3>Meebo Expression Matrix</h3>
+        <div class="emoji-panel" id="emoji-panel">
+            <!-- Programmatically populated by meebo.js to keep layout footprint small -->
+        </div>
+    </div>
+
+    <div class="panel-card" style="margin-top: auto;">
+        <div class="action-grid">
+            <button id="toggle-explorer-btn" class="util-btn">🔍 Explorer</button>
+            <button id="download-btn" class="util-btn">💾 Export</button>
+        </div>
+        <div id="brain-explorer-container"></div>
+    </div>
 </div>
 
-<div class="utility-bar">
-<!-- Row 1: Profile Management -->
-<div class="row">
-<div class="control-group">
-<label for="brain-select">Brain:</label>
-<select id="brain-select">
-<option value="default">Default Brain</option>
-</select>
-<div class="action-group">
-<button id="rename-brain-btn" class="util-btn icon-btn" title="Rename Brain">✏️</button>
-<button id="delete-brain-btn" class="util-btn icon-btn" style="background: #a93232; border-color: #bd4343;" title="Delete Brain">❌</button>
-</div>
-</div>
-<div class="upload-wrapper">
-<button class="util-btn" style="background: #1e62d0; border-color: #2b72e2; color: #fff;">📂 Import JSON</button>
-<input type="file" id="brain-upload" accept=".json" />
-</div>
-</div>
+<!-- RIGHT MAIN IMMERSIVE CHAT WINDOW CONSOLE -->
+<div class="main-chat-pane" id="chat-pane-node">
+    <div id="chat-box">
+        <div class="chat-header-overlay">
+            <button class="fullscreen-toggle-btn" id="expand-chat-btn" title="Toggle Fullscreen Chat Box">⛶</button>
+        </div>
+        <div class="msg meebo-msg">System diagnostic active. Audio canvas pipelines mapped directly on terminal text interfaces. Welcome back.</div>
+    </div>
 
-<!-- Row 2: Alg Mode, Stats & Switch Controls -->
-<div class="row">
-<div class="control-group">
-<label for="mode-select">Mode:</label>
-<select id="mode-select">
-<option value="grammar">Grammar (Proper)</option>
-<option value="chaotic">Chaotic (Random)</option>
-</select>
-<span>• Paths: <strong id="vocab-count">0</strong></span>
-</div>
-
-<div class="control-group switch-wrapper">
-<span>TTS Mode</span>
-<label class="switch">
-<input type="checkbox" id="tts-toggle">
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="control-group switch-wrapper">
-<span>Emotion Engine</span>
-<label class="switch">
-<input type="checkbox" id="emotion-toggle">
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="control-group switch-wrapper">
-<span>Smart Reply</span>
-<label class="switch">
-<input type="checkbox" id="smart-toggle" checked>
-<span class="slider"></span>
-</label>
-</div>
-
-<div class="control-group">
-<label for="learn-select">Learn Profile:</label>
-<select id="learn-select">
-<option value="adaptive">Adaptive (Chat & Learn)</option>
-<option value="silent">Silent (Learn Only)</option>
-<option value="off">Off (Respond Only)</option>
-</select>
-</div>
-</div>
-
-<!-- Row 3: Action Utilities -->
-<div class="row" style="justify-content: flex-end; border-top: 1px dashed var(--border-color); padding-top: 8px;">
-<button id="toggle-explorer-btn" class="util-btn" style="background: rgba(255,255,255,0.05);">🔍 View Brain</button>
-<button id="download-btn" class="util-btn">💾 Export Brain</button>
-</div>
-
-<div id="brain-explorer-container"></div>
-</div>
-
-<div id="chat-box">
-<div class="msg meebo-msg">Welcome back to Meebo Chat! Use the "Learn Profile" selector to swap between Adaptive conversation matching, pure text input ingestion, or offline locked execution profiles.</div>
-</div>
-
-<div id="input-area">
-<div class="input-wrapper">
-    <input type="text" id="user-input" placeholder="Type a message to Meebo..." autocomplete="off">
-    <canvas id="visualizer-canvas"></canvas>
-</div>
-<button id="mic-btn" title="Talk to Meebo">🎙️</button>
-<button id="send-btn">Send</button>
-</div>
-</div>
-
-<div id="settings-modal">
-<div class="modal-content">
-<div class="modal-header">
-<h3>🎨 Palette Themes</h3>
-<button id="close-settings-btn" style="background:none; border:none; color:#ff5555; font-size:1.1rem; cursor:pointer; font-weight:bold;">✕</button>
-</div>
-
-<div class="theme-section">
-<h4>Presets:</h4>
-<select id="theme-presets-select" style="width:100%;">
-<option value="emerald">Emerald Obsidian (Default)</option>
-<option value="cyberpunk">Neon Cyberpunk</option>
-<option value="midnight">Midnight Amethyst</option>
-<option value="monochrome">Classic Carbon Dark</option>
-<option value="custom">-- Custom Canvas Layout --</option>
-</select>
-</div>
-
-<div class="theme-section" id="custom-color-controls" style="border-top: 1px dashed var(--border-color); padding-top:12px;">
-<h4>Custom Elements:</h4>
-<div class="color-row"><span>Background Base</span><input type="color" id="color-bg-main" value="#1a1a24"></div>
-<div class="color-row"><span>Panel Cards</span><input type="color" id="color-bg-panel" value="#242432"></div>
-<div class="color-row"><span>Accent Tone</span><input type="color" id="color-accent" value="#0ebd84"></div>
-<div class="color-row"><span>Meebo Bubble</span><input type="color" id="color-bubble" value="#333344"></div>
-</div>
-</div>
+    <div id="input-area">
+        <div class="input-wrapper">
+            <input type="text" id="user-input" placeholder="Transmit telemetry commands to Meebo..." autocomplete="off">
+            <canvas id="visualizer-canvas"></canvas>
+        </div>
+        <button id="mic-btn" title="Talk to Meebo">🎙️</button>
+        <button id="send-btn">Send</button>
+    </div>
 </div>
 
 <script src="meebo.js"></script>
 </body>
 </html>
-

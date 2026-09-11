@@ -28,6 +28,11 @@ const colorBgPanel = document.getElementById('color-bg-panel');
 const colorAccent = document.getElementById('color-accent');
 const colorBubble = document.getElementById('color-bubble');
 
+// 🖥️ NEW DASHBOARD PANELS & FULLSCREEN HANDLES
+const expandSidebarBtn = document.getElementById('expand-sidebar-btn');
+const expandChatBtn = document.getElementById('expand-chat-btn');
+const emojiPanel = document.getElementById('emoji-panel');
+
 // 📊 VISUALIZER OBJECT DECLARATIONS
 const canvas = document.getElementById('visualizer-canvas');
 const ctx = canvas.getContext('2d');
@@ -37,13 +42,13 @@ let analyser = null;
 let micStream = null;
 let sourceNode = null;
 let isVisualizerActive = false;
-let syntheticWavePhase = 0; // Simulated physics oscillator loop for Meebo's TTS voice tracking
+let syntheticWavePhase = 0; 
 
 let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
 
-// 🔒 AUDIO FOCUS SAFETY LOCK: Prevents TTS and Microphone from crashing into each other
+// 🔒 AUDIO FOCUS SAFETY LOCK
 let isMeeboSpeaking = false;
 
 // Web Speech API Instantiation
@@ -57,10 +62,10 @@ if (SpeechRecognition) {
 }
 
 const themesMap = {
-emerald: { main: "#1a1a24", panel: "#242432", border: "#2e2e3f", accent: "#0ebd84", hover: "#0cb37d", bubble: "#333344", txt: "#f1f1f1" },
-cyberpunk: { main: "#0d0d13", panel: "#161622", border: "#ff0055", accent: "#00f0ff", hover: "#00b8c7", bubble: "#25142f", txt: "#00f0ff" },
-midnight: { main: "#0f0c1b", panel: "#191430", border: "#3d2b5c", accent: "#9b5de5", hover: "#7b3fd3", bubble: "#2b1c40", txt: "#f3effa" },
-monochrome: { main: "#121212", panel: "#1e1e1e", border: "#2c2c2c", accent: "#e0e0e0", hover: "#b5b5b5", bubble: "#2a2a2a", txt: "#ffffff" }
+emerald: { main: "#0b0b10", panel: "rgba(30, 30, 45, 0.4)", border: "rgba(255, 255, 255, 0.08)", accent: "#0ebd84", hover: "#0cb37d", bubble: "#1e1e2d", txt: "#f1f1f1" },
+cyberpunk: { main: "#05050a", panel: "rgba(255, 0, 85, 0.05)", border: "rgba(255, 0, 85, 0.2)", accent: "#00f0ff", hover: "#00b8c7", bubble: "#1a0826", txt: "#00f0ff" },
+midnight: { main: "#06040d", panel: "rgba(155, 93, 229, 0.06)", border: "rgba(155, 93, 229, 0.2)", accent: "#9b5de5", hover: "#7b3fd3", bubble: "#150e26", txt: "#f3effa" },
+monochrome: { main: "#080808", panel: "rgba(255, 255, 255, 0.03)", border: "rgba(255, 255, 255, 0.08)", accent: "#e0e0e0", hover: "#b5b5b5", bubble: "#161616", txt: "#ffffff" }
 };
 
 function applyThemeObject(t) {
@@ -93,33 +98,46 @@ const bHex = (B.toString(16).length==1)?"0"+B.toString(16):B.toString(16);
 return `#${rHex}${gHex}${bHex}`;
 }
 
-themePresetsSelect.addEventListener('change', (e) => {
-const val = e.target.value;
-localStorage.setItem('meebo_theme_preset_selection', val);
-if (val === "custom") {
-customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto"; saveCustomColors();
-} else {
-customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; applyThemeObject(themesMap[val]);
+if (themePresetsSelect) {
+    themePresetsSelect.addEventListener('change', (e) => {
+    const val = e.target.value;
+    localStorage.setItem('meebo_theme_preset_selection', val);
+    if (val === "custom") {
+    customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto"; saveCustomColors();
+    } else {
+    customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; applyThemeObject(themesMap[val]);
+    }
+    });
 }
+
+// 🖥️ FULLSCREEN WINDOW EXPANSION TOGGLE SYSTEM
+expandSidebarBtn.addEventListener('click', () => {
+    document.body.classList.toggle('sidebar-fullscreen');
+    document.body.classList.remove('chat-fullscreen');
+    expandSidebarBtn.innerText = document.body.classList.contains('sidebar-fullscreen') ? "✕" : "⛶";
+    expandChatBtn.innerText = "⛶";
 });
 
-[colorBgMain, colorBgPanel, colorAccent, colorBubble].forEach(input => { input.addEventListener('input', saveCustomColors); });
-openSettingsBtn.addEventListener('click', () => settingsModal.style.display = "flex");
-closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = "none");
-window.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.style.display = "none"; });
+expandChatBtn.addEventListener('click', () => {
+    document.body.classList.toggle('chat-fullscreen');
+    document.body.classList.remove('sidebar-fullscreen');
+    expandChatBtn.innerText = document.body.classList.contains('chat-fullscreen') ? "✕" : "⛶";
+    expandSidebarBtn.innerText = "⛶";
+});
 
 function loadSavedThemeSettings() {
 const savedPreset = localStorage.getItem('meebo_theme_preset_selection') || "emerald";
-themePresetsSelect.value = savedPreset;
+if (themePresetsSelect) themePresetsSelect.value = savedPreset;
 const savedCustom = localStorage.getItem('meebo_theme_custom_obj');
-if (savedCustom) {
+if (savedCustom && colorBgMain) {
 const c = JSON.parse(savedCustom);
 colorBgMain.value = c.main; colorBgPanel.value = c.panel; colorAccent.value = c.accent; colorBubble.value = c.bubble;
 }
 if (savedPreset === "custom" && savedCustom) {
 customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto"; applyThemeObject(JSON.parse(savedCustom));
 } else {
-customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; applyThemeObject(themesMap[savedPreset] || themesMap.emerald);
+if (customColorControls) { customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; }
+applyThemeObject(themesMap[savedPreset] || themesMap.emerald);
 }
 }
 
@@ -133,7 +151,7 @@ function rebuildBrainDropdown() {
 brainSelect.innerHTML = "";
 brainIndexList.forEach(id => {
 const option = document.createElement('option'); option.value = id;
-option.innerText = id === "default" ? "Default Brain" : `🧠 ${id}`;
+option.innerText = id === "default" ? "Baseline Default Brain" : `🧠 ${id}`;
 if (id === activeBrainId) option.selected = true;
 brainSelect.appendChild(option);
 });
@@ -190,6 +208,11 @@ rebuildBrainDropdown();
 }
 }
 
+function appendMessage(sender, text, className) {
+const msgDiv = document.createElement('div'); msgDiv.className = `msg ${className}`; msgDiv.innerText = text;
+chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function renderBrainExplorer() {
 const selectedMode = modeSelect.value;
 const targetData = currentBrainData[selectedMode] || {};
@@ -209,11 +232,6 @@ const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-va
 keySpan.addEventListener('click', () => nodeDiv.classList.toggle('expanded'));
 nodeDiv.appendChild(keySpan); nodeDiv.appendChild(valuesDiv); explorerContainer.appendChild(nodeDiv);
 });
-}
-
-function appendMessage(sender, text, className) {
-const msgDiv = document.createElement('div'); msgDiv.className = `msg ${className}`; msgDiv.innerText = text;
-chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function learnFromSentence(text) {
@@ -327,34 +345,22 @@ function generateGrammarReply(words) {
 }
 
 function startAudioVisualizer(type, calculatedTone = "neutral") {
-    isVisualizerActive = true;
-    canvas.style.display = "block";
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-
+    isVisualizerActive = true; canvas.style.display = "block";
+    canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
     const waveColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || "#0ebd84";
 
     function drawLoop() {
         if (!isVisualizerActive) return;
         animationFrameId = requestAnimationFrame(drawLoop);
-        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = waveColor;
-        ctx.beginPath();
-        
-        const width = canvas.width;
-        const height = canvas.height;
-        const midY = height / 2;
+        ctx.lineWidth = 2; ctx.strokeStyle = waveColor; ctx.beginPath();
+        const width = canvas.width; const height = canvas.height; const midY = height / 2;
 
         if (type === "mic" && analyser) {
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteTimeDomainData(dataArray);
-            const sliceWidth = width / dataArray.length;
-            let x = 0;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount); analyser.getByteTimeDomainData(dataArray);
+            const sliceWidth = width / dataArray.length; let x = 0;
             for (let i = 0; i < dataArray.length; i++) {
-                const v = dataArray[i] / 128.0;
-                const y = v * midY;
+                const v = dataArray[i] / 128.0; const y = v * midY;
                 if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
                 x += sliceWidth;
             }
@@ -374,68 +380,40 @@ function startAudioVisualizer(type, calculatedTone = "neutral") {
 }
 
 function stopAudioVisualizer() {
-    isVisualizerActive = false;
-    if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    canvas.style.display = "none";
+    isVisualizerActive = false; if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = "none";
 }
 
 function analyzeInputTone(text) {
     const LowerText = text.toLowerCase();
     const kindWords = ["love", "happy", "nice", "good", "great", "cool", "friend", "best", "thank", "awesome", "please", "sweet", "calm", "slow"];
     const angryWords = ["hate", "mad", "angry", "stop", "bad", "worst", "broken", "dumb", "stupid", "annoying", "loud", "fast", "shut", "kill"];
-    
     let score = 0;
     kindWords.forEach(w => { if(LowerText.includes(w)) score++; });
     angryWords.forEach(w => { if(LowerText.includes(w)) score--; });
-    
-    if (text === text.toUpperCase() && text.replace(/[^a-zA-Z]/g, "").length > 3) {
-        score -= 2;
-    }
-    
-    if (score > 0) return "kind";
-    if (score < 0) return "angry";
-    return "neutral";
+    if (text === text.toUpperCase() && text.replace(/[^a-zA-Z]/g, "").length > 3) score -= 2;
+    if (score > 0) return "kind"; if (score < 0) return "angry"; return "neutral";
 }
 
 function speakMeeboText(textToSpeak, calculatedTone) {
     if ('speechSynthesis' in window && ttsToggle.checked) {
         window.speechSynthesis.cancel();
-        
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
-        
         let targetVoice = availableVoices.find(v => v.name.includes("Chrome OS US English Male"));
         if (!targetVoice) targetVoice = availableVoices.find(v => v.name.includes("Google US English Male"));
         if (!targetVoice) targetVoice = availableVoices.find(v => v.name.includes("Google US English"));
-        if (!targetVoice) targetVoice = availableVoices.find(v => v.lang.startsWith("en") && !v.name.includes("Zira"));
-        
         if (targetVoice) utterance.voice = targetVoice;
         
-        let chosenRate = 0.82;
-        let chosenPitch = 0.35;
-
+        let chosenRate = 0.82; let chosenPitch = 0.35;
         if (emotionToggle.checked) {
-            if (calculatedTone === "angry") {
-                chosenRate = 1.25; chosenPitch = 0.15;
-            } else if (calculatedTone === "kind") {
-                chosenRate = 0.75; chosenPitch = 0.55;
-            }
+            if (calculatedTone === "angry") { chosenRate = 1.25; chosenPitch = 0.15; }
+            else if (calculatedTone === "kind") { chosenRate = 0.75; chosenPitch = 0.55; }
         }
-        
         utterance.rate = chosenRate; utterance.pitch = chosenPitch;
-        utterance.onstart = () => { 
-            isMeeboSpeaking = true; 
-            startAudioVisualizer("tts", calculatedTone);
-        };
-        utterance.onend = () => { 
-            isMeeboSpeaking = false; 
-            stopAudioVisualizer();
-        };
-        utterance.onerror = () => { 
-            isMeeboSpeaking = false; 
-            stopAudioVisualizer();
-        };
+        utterance.onstart = () => { isMeeboSpeaking = true; startAudioVisualizer("tts", calculatedTone); };
+        utterance.onend = () => { isMeeboSpeaking = false; stopAudioVisualizer(); };
+        utterance.onerror = () => { isMeeboSpeaking = false; stopAudioVisualizer(); };
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -455,24 +433,19 @@ const strategy = learnSelect.value;
 if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
 if (strategy === "silent") return;
 
-const isAskingQuestion = text.endsWith("?");
-const mentionedName = text.toLowerCase().includes("meebo");
+const isAskingQuestion = text.endsWith("?"); const mentionedName = text.toLowerCase().includes("meebo");
 
 if (isAskingQuestion || mentionedName || strategy === "adaptive") {
     setTimeout(() => {
-        const words = text.trim().split(/\s+/);
-        const currentTone = analyzeInputTone(text);
-        
+        const words = text.trim().split(/\s+/); const currentTone = analyzeInputTone(text);
         let activeMode = modeSelect.value;
         if (emotionToggle.checked) {
             if (currentTone === "angry") activeMode = "chaotic";
             if (currentTone === "kind") activeMode = "grammar";
         }
-        
         const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
         let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
         appendMessage("Meebo" + emotionLabel, reply, "meebo-msg");
-        
         speakMeeboText(reply, currentTone);
     }, 500);
 }
@@ -485,30 +458,36 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 }
 }
 
+// 😊 AUTOMATED MATRIX EMOJI PANEL INJECTOR COMPONENT
+const emojisList = ["🤖", "🦾", "👾", "🚀", "⚡", "🔋", "🧠", "✨", "🔥", "💬", "🎮", "🛸", "👀", "👍", "👑", "❤️", "⭐", "🎵"];
+emojisList.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.innerText = emoji;
+    btn.type = 'button';
+    btn.addEventListener('click', () => {
+        userInput.value += emoji;
+        userInput.focus();
+    });
+    if (emojiPanel) emojiPanel.appendChild(btn);
+});
+
 if (recognition) {
     micBtn.addEventListener('click', async () => {
         if (isMeeboSpeaking) return;
-        if (micBtn.classList.contains('listening')) {
-            recognition.stop();
-        } else {
+        if (micBtn.classList.contains('listening')) { recognition.stop(); } else {
             window.speechSynthesis.cancel(); isMeeboSpeaking = false;
             try {
                 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                analyser = audioContext.createAnalyser();
-                analyser.fftSize = 256;
-                sourceNode = audioContext.createMediaStreamSource(micStream);
-                sourceNode.connect(analyser);
+                analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
+                sourceNode = audioContext.createMediaStreamSource(micStream); sourceNode.connect(analyser);
                 startAudioVisualizer("mic");
-            } catch(e) { console.warn("Audio Context block handled.", e); }
-
+            } catch(e) { console.warn("Audio Context handled."); }
             setTimeout(() => {
                 userInput.value = ""; userInput.placeholder = "Listening to your voice...";
                 micBtn.classList.add('listening'); micBtn.innerText = "🛑";
-                try { recognition.start(); } catch(err) {
-                    micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
-                    stopAudioVisualizer();
-                }
+                try { recognition.start(); } catch(err) { micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; stopAudioVisualizer(); }
             }, 100);
         }
     });
@@ -518,21 +497,13 @@ if (recognition) {
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
     };
-
     recognition.onspeechend = () => { recognition.stop(); };
     recognition.onend = () => {
-        micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
-        userInput.placeholder = "Type a message to Meebo...";
-        stopAudioVisualizer();
-        if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
+        micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo...";
+        stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
         if (userInput.value.trim() !== "") handleSend();
     };
-    recognition.onerror = () => {
-        micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
-        userInput.placeholder = "Type a message to Meebo...";
-        stopAudioVisualizer();
-        if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
-    };
+    recognition.onerror = () => { micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 } else {
     micBtn.style.opacity = "0.4";
     micBtn.addEventListener('click', () => { alert("Web Speech API not supported on this browser."); });
