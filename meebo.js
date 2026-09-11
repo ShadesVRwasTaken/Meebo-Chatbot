@@ -1,17 +1,24 @@
-// meebo.js - Browser Learning Chatbot
+// meebo.js - Complete Browser Learning Chatbot with Semantic Detection
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 
 let brain = {};
 
-// Load existing memory from the repository file
+// Load existing memory from the repository file (or fallback to browser local cache)
 async function loadBrain() {
 try {
 const response = await fetch('brain.json');
 if (response.ok) {
 brain = await response.json();
-appendMessage("System", `Meebo loaded ${Object.keys(brain).length} word connections from permanent repo memory.`, "system-msg");
+appendMessage("System", `Meebo successfully loaded ${Object.keys(brain).length} word connections from permanent repo memory.`, "system-msg");
+} else {
+// Check local browser storage cache if brain.json isn't built yet
+const savedBrain = localStorage.getItem('meebo_web_brain');
+if (savedBrain) {
+brain = JSON.parse(savedBrain);
+appendMessage("System", "Loaded vocabulary from local browser storage cache.", "system-msg");
+}
 }
 } catch (e) {
 appendMessage("System", "Starting with a fresh blank brain template.", "system-msg");
@@ -29,7 +36,9 @@ chatBox.scrollTop = chatBox.scrollHeight;
 function learnFromSentence(text) {
 if (text.toLowerCase().trim() === "meebo wipe memory") return;
 
-const words = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim().split(/\s+/);
+// Remove punctuation so words link up cleanly
+const cleanText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+const words = cleanText.split(/\s+/);
 if (words.length < 2) return;
 
 for (let i = 0; i < words.length - 1; i++) {
@@ -40,12 +49,13 @@ if (!brain[currentWord].includes(nextWord)) {
 brain[currentWord].push(nextWord);
 }
 }
-// Temp save to browser session while tab is open
+// Save to immediate local browser cache
 localStorage.setItem('meebo_web_brain', JSON.stringify(brain));
 }
 
 function generateReply(starterText) {
-const words = starterText.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim().split(/\s+/);
+const cleanText = starterText.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
+const words = cleanText.split(/\s+/);
 let currentWord = words[Math.floor(Math.random() * words.length)];
 
 if (!brain[currentWord]) {
@@ -65,44 +75,49 @@ currentWord = nextWord;
 return sentence.join(" ");
 }
 
-async function handleWipe() {
+function handleWipe() {
 brain = {};
 localStorage.removeItem('meebo_web_brain');
-appendMessage("System", "🚨 EMERGENCY WIPE: Memory reset locally. Commit files to sync to repo.", "system-msg");
+appendMessage("System", "🚨 EMERGENCY WIPE: Memory reset locally. Paste empty {} into brain.json to sync to repo permanently.", "system-msg");
 }
 
 function handleSend() {
 const text = userInput.value.trim();
 if (!text) return;
 
-// 1. Show your message on the screen
+// 1. Display your text on the page layout
 appendMessage("You", text, "user-msg");
 userInput.value = "";
 
-// 2. Check for the Emergency Wipe Command
+// 2. Check for the Emergency Wipe Trigger
 if (text.toLowerCase() === "meebo wipe memory") {
 handleWipe();
 return;
 }
 
-// 3. Meebo learns from the sentence in the background
+// 3. Meebo processes and maps the words in the background
 learnFromSentence(text);
 
-// 4. CRITICAL FIX: Only respond if "meebo" or "Meebo" is in the sentence
-if (text.toLowerCase().includes("meebo")) {
+// 4. SEMANTIC DETECTION: Look for a question mark (?) OR his name
+const isAskingQuestion = text.endsWith("?");
+const mentionedName = text.toLowerCase().includes("meebo");
+
+if (isAskingQuestion || mentionedName) {
+// Meebo responds because you are directly engaging him
 setTimeout(() => {
 const reply = generateReply(text);
 appendMessage("Meebo", reply, "meebo-msg");
 }, 500);
 } else {
-// Meebo stays silent because his name wasn't mentioned!
-console.log("Meebo learned your words silently in the background.");
+// Meebo learns silently in the background because it's a statement
+console.log("Statement detected. Meebo is listening silently...");
 }
 }
 
-// Keep the event listeners at the very bottom the same
+// 5. Interface Event Listeners
 sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
+// Initialize Meebo's memory banks on startup
 loadBrain();
 
