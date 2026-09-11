@@ -121,3 +121,34 @@ userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSen
 // Initialize Meebo's memory banks on startup
 loadBrain();
 
+// Add these lines to the very bottom of your meebo.js file
+const downloadBtn = document.getElementById('download-btn');
+const vocabCount = document.getElementById('vocab-count');
+
+// Updates the word counter on screen
+function updateInterfaceCount() {
+if (vocabCount) {
+vocabCount.innerText = Object.keys(brain).length;
+}
+}
+
+// Download action utility
+downloadBtn.addEventListener('click', () => {
+const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(brain, null, 2));
+const downloadAnchor = document.createElement('a');
+downloadAnchor.setAttribute("href", dataStr);
+downloadAnchor.setAttribute("download", "brain.json");
+document.body.appendChild(downloadAnchor);
+downloadAnchor.click();
+downloadAnchor.remove();
+});
+
+// Update the count immediately during script loads
+setTimeout(updateInterfaceCount, 1000);
+// Make sure learnFromSentence pushes count updates
+const originalLearn = learnFromSentence;
+learnFromSentence = function(text) {
+originalLearn(text);
+updateInterfaceCount();
+};
+

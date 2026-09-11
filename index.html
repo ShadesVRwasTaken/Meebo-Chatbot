@@ -15,11 +15,20 @@ h1 { color: #0ebd84; margin: 5px 0; text-align: center; }
 #input-area { display: flex; gap: 10px; }
 input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #333344; background: #1a1a24; color: #fff; }
 button { padding: 10px 20px; border-radius: 6px; border: none; background: #0ebd84; color: white; cursor: pointer; font-weight: bold; }
+/* 💾 Upgraded save utility layout */
+.utility-bar { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.util-btn { background: #444455; font-size: 0.85em; padding: 6px 12px; }
 </style>
 </head>
 <body>
 
 <h1>🤖 Meebo Web Chat</h1>
+
+<div class="utility-bar">
+<span>Memory Status: <strong id="vocab-count">0</strong> paths</span>
+<button id="download-btn" class="util-btn">💾 Download brain.json</button>
+</div>
+
 <div id="chat-box">
 <div class="msg meebo-msg">Hello! I am Meebo. Talk to me to teach me sentences!</div>
 </div>
