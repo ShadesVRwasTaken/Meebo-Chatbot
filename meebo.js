@@ -1,4 +1,4 @@
-// meebo.js - Multi-Brain Local Dashboard Profile Engine
+// meebo.js - Part 1: Brain Database & Visual Explorer Panel
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
@@ -7,13 +7,60 @@ const vocabCount = document.getElementById('vocab-count');
 const modeSelect = document.getElementById('mode-select');
 const brainSelect = document.getElementById('brain-select');
 const brainUpload = document.getElementById('brain-upload');
+const explorerContainer = document.getElementById('brain-explorer-container');
+const toggleExplorerBtn = document.getElementById('toggle-explorer-btn');
 
-// Base structural setup
 let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
-
-// Index list to track what brain keys exist across resets
 let brainIndexList = ["default"];
+
+// 🔍 BUILT-IN INTERACTIVE JSON VISUALIZER LOGIC
+function renderBrainExplorer() {
+const selectedMode = modeSelect.value;
+const targetData = currentBrainData[selectedMode] || {};
+const keys = Object.keys(targetData).sort();
+
+if (keys.length === 0) {
+explorerContainer.innerHTML = `<div style="color: #8a8a9e; font-style: italic; padding: 5px;">The [${selectedMode}] JSON dictionary is currently empty. Type to add paths!</div>`;
+return;
+}
+
+explorerContainer.innerHTML = `<div style="color: #8a8a9e; margin-bottom: 8px; font-weight: bold; font-family: monospace;">json_structure: brain.${selectedMode}</div>`;
+
+keys.forEach(key => {
+const nodeDiv = document.createElement('div');
+nodeDiv.className = 'brain-node';
+
+const keySpan = document.createElement('span');
+keySpan.className = 'brain-key';
+const formattedKey = key.includes('_') ? `"${key.replace('_', ' ')}"` : `"${key}"`;
+keySpan.innerText = `${formattedKey}: `;
+
+const valuesDiv = document.createElement('div');
+valuesDiv.className = 'brain-values';
+valuesDiv.innerText = JSON.stringify(targetData[key]);
+
+keySpan.addEventListener('click', () => {
+nodeDiv.classList.toggle('expanded');
+});
+
+nodeDiv.appendChild(keySpan);
+nodeDiv.appendChild(valuesDiv);
+explorerContainer.appendChild(nodeDiv);
+});
+}
+
+// Explorer toggle window visibility click event
+toggleExplorerBtn.addEventListener('click', () => {
+if (explorerContainer.style.display === "block") {
+explorerContainer.style.display = "none";
+toggleExplorerBtn.style.borderColor = "#444455";
+} else {
+renderBrainExplorer();
+explorerContainer.style.display = "block";
+toggleExplorerBtn.style.borderColor = "#0ebd84";
+}
+});
 
 function loadIndex() {
 const index = localStorage.getItem('meebo_index_list');
@@ -34,6 +81,7 @@ brainSelect.appendChild(option);
 });
 }
 
+// meebo.js - Part 2: Chat Input & Response Generators
 async function loadActiveBrain() {
 const savedData = localStorage.getItem(`meebo_profile_${activeBrainId}`);
 
@@ -43,14 +91,13 @@ currentBrainData.chaotic = parsed.chaotic || {};
 currentBrainData.grammar = parsed.grammar || {};
 appendMessage("System", `Loaded active profile [${activeBrainId}].`, "system-msg");
 } else if (activeBrainId === "default") {
-// Fallback fallback to fetch repo baseline for default profile if empty
 try {
 const response = await fetch('brain.json');
 if (response.ok) {
 const data = await response.json();
 currentBrainData.chaotic = data.chaotic || {};
 currentBrainData.grammar = data.grammar || {};
-appendMessage("System", "Synced Default profile with repo repository benchmarks.", "system-msg");
+appendMessage("System", "Synced Default profile with repository endpoints.", "system-msg");
 }
 } catch (e) {
 currentBrainData = { chaotic: {}, grammar: {} };
@@ -59,6 +106,7 @@ currentBrainData = { chaotic: {}, grammar: {} };
 currentBrainData = { chaotic: {}, grammar: {} };
 }
 updateInterfaceCount();
+if (explorerContainer.style.display === "block") renderBrainExplorer();
 }
 
 function saveActiveBrain() {
@@ -85,7 +133,7 @@ const cleanText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").
 const words = cleanText.split(/\s+/);
 if (words.length < 2) return;
 
-// Train active profile layer paths
+// Train Chaotic Layer
 for (let i = 0; i < words.length - 1; i++) {
 const currentWord = words[i];
 const nextWord = words[i + 1];
@@ -95,6 +143,7 @@ currentBrainData.chaotic[currentWord].push(nextWord);
 }
 }
 
+// Train Grammar Layer
 if (words.length >= 3) {
 for (let i = 0; i < words.length - 2; i++) {
 const currentPair = `${words[i]}_${words[i+1]}`;
@@ -107,6 +156,7 @@ currentBrainData.grammar[currentPair].push(nextWord);
 }
 saveActiveBrain();
 updateInterfaceCount();
+if (explorerContainer.style.display === "block") renderBrainExplorer();
 }
 
 function generateChaoticReply(words) {
@@ -160,6 +210,7 @@ function handleWipe() {
 currentBrainData = { chaotic: {}, grammar: {} };
 saveActiveBrain();
 updateInterfaceCount();
+if (explorerContainer.style.display === "block") renderBrainExplorer();
 appendMessage("System", `🚨 wiped profile [${activeBrainId}] database parameters.`, "system-msg");
 }
 
@@ -199,19 +250,17 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 }
 }
 
-// 📂 PROCESS NEW UPLOADED BRAIN FILE
 brainUpload.addEventListener('change', (event) => {
-const file = event.target.files[0];
-if (!file) return;
+const files = event.target.files;
+if (!files || files.length === 0) return;
+const file = files[0];
 
 const reader = new FileReader();
 reader.onload = function(e) {
 try {
 const uploadedJson = JSON.parse(e.target.result);
-// Grab filename minus extension to use as profile identifier label
 const profileName = file.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
 
-// Format check
 if (!brainIndexList.includes(profileName)) {
 brainIndexList.push(profileName);
 localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
@@ -230,13 +279,15 @@ appendMessage("System", "🔴 ERROR: Invalid JSON file structure template.", "sy
 reader.readAsText(file);
 });
 
-// Dropdown change listener
 brainSelect.addEventListener('change', (e) => {
 activeBrainId = e.target.value;
 loadActiveBrain();
 });
 
-modeSelect.addEventListener('change', updateInterfaceCount);
+modeSelect.addEventListener('change', () => {
+updateInterfaceCount();
+if (explorerContainer.style.display === "block") renderBrainExplorer();
+});
 
 downloadBtn.addEventListener('click', () => {
 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentBrainData, null, 2));
@@ -253,4 +304,5 @@ userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSen
 
 loadIndex();
 loadActiveBrain();
+
 
