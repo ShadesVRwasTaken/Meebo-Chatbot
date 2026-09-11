@@ -59,8 +59,8 @@ let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
 let isMeeboSpeaking = false;
 
-// 🔒 SAFETY GATE: Prevents background audio echoes from double-triggering messages
-let isProcessingVoice = false;
+// 🔒 TIME-BASED SAFETY GATE: Stops double execution text results
+let lastVoiceSentTime = 0;
 
 // Web Speech API Instantiation
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -99,7 +99,7 @@ if (themePresetsSelect && themePresetsSelect.value === "custom") applyThemeObjec
 }
 
 function adjustBrightness(hex, percent) {
-let R = parseInt(hex.substring(1,3),16), G = parseInt(hex.substring(3,5),16), B = parseInt(hex.substring(5,7),16);
+let R = parseInt(hex.substring(1,3),16), G = parseInt(hex.substring(3,5),16), B = parseInt(hex.substring(3,5),16);
 R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100);
 R = (R<255)?R:255; G = (G<255)?G:255; B = (B<255)?B:255;
 R = (R<0)?0:R; G = (G<0)?0:B; B = (B<0)?0:B;
@@ -384,6 +384,9 @@ function analyzeInputTone(text) {
 }
 
 function speakMeeboText(textToSpeak, calculatedTone) {
+    // Stop any speech recognition immediately before talking to prevent picking up echoes
+    if (isCallRoomActive && recognition) { try { recognition.stop(); } catch(e){} }
+
     if ('speechSynthesis' in window && (ttsToggle.checked || isCallRoomActive)) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
@@ -398,35 +401,43 @@ function speakMeeboText(textToSpeak, calculatedTone) {
         }
         utterance.rate = chosenRate; utterance.pitch = chosenPitch;
         
+        // Safety Clean Fallback function (Fixes Chromebook freeze bug)
+        const cleanAfterSpeaking = () => {
+            isMeeboSpeaking = false;
+            stopAudioVisualizer();
+            if (isCallRoomActive && recognition) {
+                setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
+            }
+        };
+
+        // Fallback timer: forces unlock after 10 seconds if Chromebook fails to fire onend
+        const fallbackTimeout = setTimeout(cleanAfterSpeaking, 10000);
+
         utterance.onstart = () => { 
             isMeeboSpeaking = true; 
             if(!isCallRoomActive) startAudioVisualizer("tts", calculatedTone); 
         };
         utterance.onend = () => { 
-            isMeeboSpeaking = false; 
-            stopAudioVisualizer(); 
-            // 🔒 FIXED: Check call state explicitly to prevent crashing non-call recognition engines
-            if(isCallRoomActive && recognition) { 
-                try { recognition.start(); } catch(e){} 
-            } 
+            clearTimeout(fallbackTimeout);
+            cleanAfterSpeaking();
         };
         utterance.onerror = () => { 
-            isMeeboSpeaking = false; 
-            stopAudioVisualizer(); 
-            if(isCallRoomActive && recognition) { 
-                try { recognition.start(); } catch(e){} 
-            } 
+            clearTimeout(fallbackTimeout);
+            cleanAfterSpeaking();
         };
         window.speechSynthesis.speak(utterance);
+    } else {
+        // If TTS toggle is turned off, instantly release recognition loop
+        if (isCallRoomActive && recognition) {
+            setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
+        }
     }
 }
 
 function handleSend(customText = null) {
-    // Allows text extraction from either the textbox element or voice capture parameter directly
     const text = customText !== null ? customText.trim() : userInput.value.trim(); 
     if (!text) return;
     
-    // Safety exit rule: prevents duplicate executions if voice pipeline is locked
     if (customText === null) userInput.value = "";
 
     appendMessage("You", text, "user-msg");
@@ -453,18 +464,19 @@ function setupAlwaysListeningCall() {
     if (!recognition) return;
     
     recognition.onresult = (event) => {
-        if (isProcessingVoice || isMeeboSpeaking) return;
+        if (isMeeboSpeaking) return;
         
-        let transcript = event.results[event.results.length - 1][0].transcript;
+        const currentTime = Date.now();
+        // 🔒 COOLING DEBOUNCE: Blocks double text execution requests if fired within 2 seconds
+        if (currentTime - lastVoiceSentTime < 2000) return;
+        
+        let transcript = event.results[event.results.length - 1][0].transcript; // Fixed nested result drilling
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         
         if (isCallRoomActive && transcript.toLowerCase().includes("meebo")) {
-            // 🔒 GATE ACTIVATION: Instantly lock the audio pipeline from processing duplicates
-            isProcessingVoice = true; 
+            lastVoiceSentTime = currentTime; // Lock the time gate
+            appendMessage("You (Voice)", transcript, "user-msg"); 
             handleSend(transcript);
-            
-            // Release the pipeline safely after transmission finishes
-            setTimeout(() => { isProcessingVoice = false; }, 600);
         } else if (!isCallRoomActive) { 
             userInput.value = transcript; 
         }
@@ -472,7 +484,7 @@ function setupAlwaysListeningCall() {
     
     recognition.onend = () => {
         if (isCallRoomActive && !isMeeboSpeaking) { 
-            try { recognition.start(); } catch(err) {} 
+            setTimeout(() => { try { recognition.start(); } catch(err) {} }, 200);
         } else if (!isCallRoomActive) {
             micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; 
             userInput.placeholder = "Type a message to Meebo..."; 
@@ -494,7 +506,7 @@ callToggleBtn.addEventListener('click', async () => {
         runCallRoomVisualizer(); setupAlwaysListeningCall();
         if (recognition) { try { recognition.start(); } catch(e){} }
     } catch(err) {
-        alert("Permissions blocked."); document.body.classList.remove('call-active'); isCallRoomActive = false;
+        alert("Camera permissions blocked."); document.body.classList.remove('call-active'); isCallRoomActive = false;
     }
 });
 
