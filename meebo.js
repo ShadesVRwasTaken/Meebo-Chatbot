@@ -5,6 +5,7 @@ const sendBtn = document.getElementById('send-btn');
 const micBtn = document.getElementById('mic-btn');
 const ttsToggle = document.getElementById('tts-toggle');
 const emotionToggle = document.getElementById('emotion-toggle');
+const smartToggle = document.getElementById('smart-toggle'); 
 const downloadBtn = document.getElementById('download-btn');
 const vocabCount = document.getElementById('vocab-count');
 const modeSelect = document.getElementById('mode-select');
@@ -229,54 +230,89 @@ if (explorerContainer.style.display === "block") renderBrainExplorer();
 }
 
 function generateChaoticReply(words) {
-let currentWord = words[Math.floor(Math.random() * words.length)].toLowerCase();
-if (!currentBrainData.chaotic[currentWord]) {
-const keys = Object.keys(currentBrainData.chaotic);
-if (keys.length === 0) return "Active profile's memory paths are empty...";
-currentWord = keys[Math.floor(Math.random() * keys.length)];
-}
-let sentence = [currentWord];
-let wordPointer = currentWord;
-for (let i = 0; i < 12; i++) {
-const possibilities = currentBrainData.chaotic[wordPointer];
-if (!possibilities || possibilities.length === 0) break;
-const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
-sentence.push(nextWord);
-wordPointer = nextWord.toLowerCase();
-}
-let outStr = sentence.join(" ");
-return outStr.charAt(0).toUpperCase() + outStr.slice(1);
+    let currentWord = "";
+    const cleanSpokenWords = words.map(w => w.toLowerCase());
+    const validContextWords = cleanSpokenWords.filter(w => currentBrainData.chaotic[w]);
+    
+    if (smartToggle.checked && validContextWords.length > 0) {
+        currentWord = validContextWords[Math.floor(Math.random() * validContextWords.length)];
+    } else {
+        const userSelection = cleanSpokenWords.filter(w => w.replace(/[^a-z]/g, "").length > 0);
+        if (userSelection.length > 0) {
+            currentWord = userSelection[Math.floor(Math.random() * userSelection.length)];
+        }
+        if (!currentWord || !currentBrainData.chaotic[currentWord]) {
+            const keys = Object.keys(currentBrainData.chaotic);
+            if (keys.length === 0) return "Active profile's memory paths are empty...";
+            currentWord = keys[Math.floor(Math.random() * keys.length)];
+        }
+    }
+    
+    let sentence = [currentWord];
+    let wordPointer = currentWord;
+    for (let i = 0; i < 12; i++) {
+        const possibilities = currentBrainData.chaotic[wordPointer];
+        if (!possibilities || possibilities.length === 0) break;
+        const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
+        sentence.push(nextWord);
+        wordPointer = nextWord.toLowerCase();
+    }
+    let outStr = sentence.join(" ");
+    return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
 function generateGrammarReply(words) {
-let key1 = "", key2 = "";
-if (words.length >= 2) {
-for (let i = 0; i < words.length - 1; i++) {
-if (currentBrainData.grammar[`${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`]) {
-key1 = words[i].toLowerCase(); key2 = words[i+1].toLowerCase();
-break;
-}
-}
-}
-const keys = Object.keys(currentBrainData.grammar);
-if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
+    let key1 = "", key2 = "";
+    const cleanWords = words.map(w => w.toLowerCase());
+    
+    if (smartToggle.checked) {
+        if (cleanWords.length >= 2) {
+            for (let i = 0; i < cleanWords.length - 1; i++) {
+                const potentialPair = `${cleanWords[i]}__${cleanWords[i+1]}`;
+                if (currentBrainData.grammar[potentialPair]) {
+                    key1 = cleanWords[i]; key2 = cleanWords[i+1];
+                    break;
+                }
+            }
+        }
+        if (!key1 || !key2) {
+            const matchingKeys = Object.keys(currentBrainData.grammar).filter(key => 
+                cleanWords.some(w => key.split('__').includes(w))
+            );
+            if (matchingKeys.length > 0) {
+                const randomPair = matchingKeys[Math.floor(Math.random() * matchingKeys.length)];
+                [key1, key2] = randomPair.split('__');
+            }
+        }
+    } else {
+        if (cleanWords.length >= 2) {
+            for (let i = 0; i < cleanWords.length - 1; i++) {
+                if (currentBrainData.grammar[`${cleanWords[i]}__${cleanWords[i+1]}`]) {
+                    key1 = cleanWords[i]; key2 = cleanWords[i+1];
+                    break;
+                }
+            }
+        }
+    }
+    
+    const keys = Object.keys(currentBrainData.grammar);
+    if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
+    if (!key1 || !key2) {
+        const randomKey = keys[Math.floor(Math.random() * keys.length)];
+        [key1, key2] = randomKey.split('__');
+    }
 
-if (!key1 || !key2) {
-const randomKey = keys[Math.floor(Math.random() * keys.length)];
-[key1, key2] = randomKey.split('__');
-}
-
-let sentence = [key1, key2];
-for (let i = 0; i < 14; i++) {
-const currentPair = `${key1}__${key2}`;
-const possibilities = currentBrainData.grammar[currentPair];
-if (!possibilities || possibilities.length === 0) break;
-const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
-sentence.push(nextWord);
-key1 = key2; key2 = nextWord.toLowerCase();
-}
-let outStr = sentence.join(" ");
-return outStr.charAt(0).toUpperCase() + outStr.slice(1);
+    let sentence = [key1, key2];
+    for (let i = 0; i < 14; i++) {
+        const currentPair = `${key1}__${key2}`;
+        const possibilities = currentBrainData.grammar[currentPair];
+        if (!possibilities || possibilities.length === 0) break;
+        const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
+        sentence.push(nextWord);
+        key1 = key2; key2 = nextWord.toLowerCase();
+    }
+    let outStr = sentence.join(" ");
+    return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
 function analyzeInputTone(text) {
@@ -361,7 +397,7 @@ if (isAskingQuestion || mentionedName || strategy === "adaptive") {
         
         const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
         let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
-        appendMessage(`Meebo${emotionLabel}`, reply, "meebo-msg");
+        appendMessage("Meebo" + emotionLabel, reply, "meebo-msg");
         
         speakMeeboText(reply, currentTone);
     }, 500);
