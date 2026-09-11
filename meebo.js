@@ -3,6 +3,7 @@ const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
 const micBtn = document.getElementById('mic-btn');
+const ttsToggle = document.getElementById('tts-toggle');
 const downloadBtn = document.getElementById('download-btn');
 const vocabCount = document.getElementById('vocab-count');
 const modeSelect = document.getElementById('mode-select');
@@ -274,6 +275,22 @@ let outStr = sentence.join(" ");
 return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
+// 🔊 Central Text-To-Speech Playback Engine
+function speakMeeboText(textToSpeak) {
+    if ('speechSynthesis' in window && ttsToggle.checked) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        const availableVoices = window.speechSynthesis.getVoices();
+        const targetVoice = availableVoices.find(voice => 
+            voice.name.includes("Google US English") || voice.name.includes("Microsoft David")
+        );
+        if (targetVoice) utterance.voice = targetVoice;
+        utterance.rate = 1.05;
+        utterance.pitch = 1.15;
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
 function handleWipe() {
 currentBrainData = { chaotic: {}, grammar: {} }; saveActiveBrain(); updateInterfaceCount();
 if (explorerContainer.style.display === "block") renderBrainExplorer();
@@ -298,6 +315,7 @@ const words = text.trim().split(/\s+/);
 const selectedMode = modeSelect.value;
 const reply = selectedMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
 appendMessage("Meebo", reply, "meebo-msg");
+speakMeeboText(reply);
 }, 500);
 }
 }
@@ -324,12 +342,10 @@ if (recognition) {
     });
 
     recognition.onresult = (event) => {
-        let transcript = event.results[0][0].transcript;
-        
-        // 🔮 FIX UP: Instantly maps phonetic cloud errors back to Meebo!
+        let transcript = event.results.transcript;
+        // 🔮 Auto-Scrub Error Override Mapping Rules
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo");
         transcript = transcript.replace(/\bameebo\b/gi, "Meebo");
-        
         userInput.value = transcript;
     };
 
@@ -354,6 +370,10 @@ if (recognition) {
     micBtn.addEventListener('click', () => {
         alert("Your current browser doesn't support the Web Speech API. Try Chrome or Edge!");
     });
+}
+
+if ('speechSynthesis' in window && window.speechSynthesis.onvoiceschanged !== undefined) {
+    window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
 }
 
 brainUpload.addEventListener('change', (event) => {
