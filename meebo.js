@@ -1,4 +1,4 @@
-// meebo.js - Part 1: Brain Profiles, Registry Toggles & Theme Customization Loops
+// meebo.js - Part 1: DOM Elements, Profiles Index, and Theme Configuration
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
@@ -25,7 +25,7 @@ const colorAccent = document.getElementById('color-accent');
 const colorBubble = document.getElementById('color-bubble');
 
 let activeBrainId = "default";
-let currentBrainData = { chaotic: {}, grammar: {} };
+let currentBrainData = { chaotic: {}, grammar: {}, complex: {} };
 let brainIndexList = ["default"];
 
 const themesMap = {
@@ -95,6 +95,7 @@ customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEven
 }
 }
 
+// meebo.js - Part 2: JSON Browser Node Tree Layout Parser & Registry Operations
 function renderBrainExplorer() {
 const selectedMode = modeSelect.value;
 const targetData = currentBrainData[selectedMode] || {};
@@ -108,8 +109,12 @@ explorerContainer.innerHTML = `<div style="color: #8a8a9e; margin-bottom: 8px; f
 keys.forEach(key => {
 const nodeDiv = document.createElement('div'); nodeDiv.className = 'brain-node';
 const keySpan = document.createElement('span'); keySpan.className = 'brain-key';
-const formattedKey = key.includes('__') ? `"${key.replace(/__/g, ' ')}"` : `"${key}"`;
-keySpan.innerText = `${formattedKey}: `;
+
+let label = key;
+if (key.includes('____')) label = key.replace(/____/g, ' ');
+else if (key.includes('__')) label = key.replace(/__/g, ' ');
+
+keySpan.innerText = `"${label}": `;
 const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-values'; valuesDiv.innerText = JSON.stringify(targetData[key]);
 keySpan.addEventListener('click', () => nodeDiv.classList.toggle('expanded'));
 nodeDiv.appendChild(keySpan); nodeDiv.appendChild(valuesDiv); explorerContainer.appendChild(nodeDiv);
@@ -154,23 +159,26 @@ localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
 activeBrainId = "default"; rebuildBrainDropdown(); loadActiveBrain(); appendMessage("System", "Selected custom brain profile purged from device.", "system-msg");
 });
 
-// meebo.js - Part 2: Structural Cases, Learning Triggers & Conversation Flow Filters
 async function loadActiveBrain() {
 const savedData = localStorage.getItem(`meebo_profile_${activeBrainId}`);
 if (savedData) {
 const parsed = JSON.parse(savedData);
-currentBrainData.chaotic = parsed.chaotic || {}; currentBrainData.grammar = parsed.grammar || {};
+currentBrainData.chaotic = parsed.chaotic || {};
+currentBrainData.grammar = parsed.grammar || {};
+currentBrainData.complex = parsed.complex || {};
 appendMessage("System", `Loaded active profile [${activeBrainId}].`, "system-msg");
 } else if (activeBrainId === "default") {
 try {
 const response = await fetch('brain.json');
 if (response.ok) {
 const data = await response.json();
-currentBrainData.chaotic = data.chaotic || {}; currentBrainData.grammar = data.grammar || {};
+currentBrainData.chaotic = data.chaotic || {};
+currentBrainData.grammar = data.grammar || {};
+currentBrainData.complex = data.complex || {};
 appendMessage("System", "Synced Default profile with repository endpoints.", "system-msg");
 }
-} catch (e) { currentBrainData = { chaotic: {}, grammar: {} }; }
-} else { currentBrainData = { chaotic: {}, grammar: {} }; }
+} catch (e) { currentBrainData = { chaotic: {}, grammar: {}, complex: {} }; }
+} else { currentBrainData = { chaotic: {}, grammar: {}, complex: {} }; }
 updateInterfaceCount();
 if (explorerContainer.style.display === "block") renderBrainExplorer();
 }
@@ -184,34 +192,38 @@ rebuildBrainDropdown();
 }
 }
 
+// meebo.js - Part 3: Text Learning Mechanics, Multi-Order Chain Generators, and Flow Events
 function appendMessage(sender, text, className) {
 const msgDiv = document.createElement('div'); msgDiv.className = `msg ${className}`; msgDiv.innerText = text;
 chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
-// 🧠 UPGRADED: Keeps Case, Comma and Punctuation spacing arrays intact!
 function learnFromSentence(text) {
 if (text.toLowerCase().trim() === "meebo wipe memory") return;
-
-// Split by spacing but keep case, punctuation, and markers intact
 const words = text.trim().split(/\s+/);
 if (words.length < 2) return;
 
-// Chaotic Mode Paths (Use clean lower casing ONLY for lookup key indices)
+// 1st Order (Chaotic)
 for (let i = 0; i < words.length - 1; i++) {
-const currentWord = words[i].toLowerCase();
-const nextWord = words[i + 1]; // Preserves target capitalization
+const currentWord = words[i].toLowerCase(); const nextWord = words[i + 1];
 if (!currentBrainData.chaotic[currentWord]) currentBrainData.chaotic[currentWord] = [];
 if (!currentBrainData.chaotic[currentWord].includes(nextWord)) currentBrainData.chaotic[currentWord].push(nextWord);
 }
-
-// Grammar Mode Paths
+// 2nd Order (Grammar)
 if (words.length >= 3) {
 for (let i = 0; i < words.length - 2; i++) {
-const currentPair = `${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`;
-const nextWord = words[i + 2]; // Preserves proper grammar endings
+const currentPair = `${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`; const nextWord = words[i + 2];
 if (!currentBrainData.grammar[currentPair]) currentBrainData.grammar[currentPair] = [];
 if (!currentBrainData.grammar[currentPair].includes(nextWord)) currentBrainData.grammar[currentPair].push(nextWord);
+}
+}
+// 4th Order (Complex Phrase Structure)
+if (words.length >= 5) {
+for (let i = 0; i < words.length - 4; i++) {
+const currentQuad = `${words[i].toLowerCase()}____${words[i+1].toLowerCase()}____${words[i+2].toLowerCase()}____${words[i+3].toLowerCase()}`;
+const nextWord = words[i + 4];
+if (!currentBrainData.complex[currentQuad]) currentBrainData.complex[currentQuad] = [];
+if (!currentBrainData.complex[currentQuad].includes(nextWord)) currentBrainData.complex[currentQuad].push(nextWord);
 }
 }
 saveActiveBrain(); updateInterfaceCount();
@@ -225,18 +237,15 @@ const keys = Object.keys(currentBrainData.chaotic);
 if (keys.length === 0) return "Active profile's memory paths are empty...";
 currentWord = keys[Math.floor(Math.random() * keys.length)];
 }
-let sentence = [currentWord];
-let wordPointer = currentWord;
-for (let i = 0; i < 12; i++) {
+let sentence = [currentWord]; let wordPointer = currentWord;
+for (let i = 0; i < 10; i++) {
 const possibilities = currentBrainData.chaotic[wordPointer];
 if (!possibilities || possibilities.length === 0) break;
 const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
-sentence.push(nextWord);
-wordPointer = nextWord.toLowerCase();
+sentence.push(nextWord); wordPointer = nextWord.toLowerCase();
 }
-// Capitalize the first word of the output phrase beautifully
-sentence[0] = sentence[0].charAt(0).toUpperCase() + sentence[0].slice(1);
-return sentence.join(" ");
+let res = sentence.join(" ");
+return res.charAt(0).toUpperCase() + res.slice(1);
 }
 
 function generateGrammarReply(words) {
@@ -244,34 +253,56 @@ let key1 = "", key2 = "";
 if (words.length >= 2) {
 for (let i = 0; i < words.length - 1; i++) {
 if (currentBrainData.grammar[`${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`]) {
-key1 = words[i].toLowerCase(); key2 = words[i+1].toLowerCase();
-break;
+key1 = words[i].toLowerCase(); key2 = words[i+1].toLowerCase(); break;
 }
 }
 }
 const keys = Object.keys(currentBrainData.grammar);
-if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
-
+if (keys.length === 0) return "Active profile needs 2-word phrase blocks. Keep chatting!";
 if (!key1 || !key2) {
-const randomKey = keys[Math.floor(Math.random() * keys.length)];
-[key1, key2] = randomKey.split('__');
+const randomKey = keys[Math.floor(Math.random() * keys.length)]; [key1, key2] = randomKey.split('__');
 }
-
 let sentence = [key1, key2];
-for (let i = 0; i < 14; i++) {
-const currentPair = `${key1}__${key2}`;
-const possibilities = currentBrainData.grammar[currentPair];
+for (let i = 0; i < 12; i++) {
+const currentPair = `${key1}__${key2}`; const possibilities = currentBrainData.grammar[currentPair];
 if (!possibilities || possibilities.length === 0) break;
 const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
-sentence.push(nextWord);
-key1 = key2; key2 = nextWord.toLowerCase();
+sentence.push(nextWord); key1 = key2; key2 = nextWord.toLowerCase();
 }
-sentence[0] = sentence[0].charAt(0).toUpperCase() + sentence[0].slice(1);
-return sentence.join(" ");
+let res = sentence.join(" ");
+return res.charAt(0).toUpperCase() + res.slice(1);
+}
+
+function generateComplexReply(words) {
+let k1 = "", k2 = "", k3 = "", k4 = "";
+if (words.length >= 4) {
+for (let i = 0; i < words.length - 3; i++) {
+const lookKey = `${words[i].toLowerCase()}____${words[i+1].toLowerCase()}____${words[i+2].toLowerCase()}____${words[i+3].toLowerCase()}`;
+if (currentBrainData.complex[lookKey]) {
+k1 = words[i].toLowerCase(); k2 = words[i+1].toLowerCase(); k3 = words[i+2].toLowerCase(); k4 = words[i+3].toLowerCase();
+break;
+}
+}
+}
+const keys = Object.keys(currentBrainData.complex);
+if (keys.length === 0) return "Complex Mode requires sentences with at least 5 words to map trajectories.";
+if (!k1 || !k2 || !k3 || !k4) {
+const randomKey = keys[Math.floor(Math.random() * keys.length)];
+[k1, k2, k3, k4] = randomKey.split('____');
+}
+let sentence = [k1, k2, k3, k4];
+for (let i = 0; i < 15; i++) {
+const currentQuad = `${k1}____${k2}____${k3}____${k4}`; const possibilities = currentBrainData.complex[currentQuad];
+if (!possibilities || possibilities.length === 0) break;
+const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
+sentence.push(nextWord); k1 = k2; k2 = k3; k3 = k4; k4 = nextWord.toLowerCase();
+}
+let res = sentence.join(" ");
+return res.charAt(0).toUpperCase() + res.slice(1);
 }
 
 function handleWipe() {
-currentBrainData = { chaotic: {}, grammar: {} }; saveActiveBrain(); updateInterfaceCount();
+currentBrainData = { chaotic: {}, grammar: {}, complex: {} }; saveActiveBrain(); updateInterfaceCount();
 if (explorerContainer.style.display === "block") renderBrainExplorer();
 appendMessage("System", `🚨 wiped profile [${activeBrainId}] database parameters.`, "system-msg");
 }
@@ -282,25 +313,18 @@ appendMessage("You", text, "user-msg"); userInput.value = "";
 if (text.toLowerCase() === "meebo wipe memory") { handleWipe(); return; }
 
 const strategy = learnSelect.value;
+if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
+if (strategy === "silent") return;
 
-// 🎛️ PROCESS STRATEGY SELECTION
-if (strategy === "adaptive" || strategy === "silent") {
-learnFromSentence(text);
-}
-
-if (strategy === "silent") {
-// Silent profile means learning occurs, but response tracking is muted
-return;
-}
-
-const isAskingQuestion = text.endsWith("?");
-const mentionedName = text.toLowerCase().includes("meebo");
-
+const isAskingQuestion = text.endsWith("?"); const mentionedName = text.toLowerCase().includes("meebo");
 if (isAskingQuestion || mentionedName || strategy === "adaptive") {
 setTimeout(() => {
 const words = text.trim().split(/\s+/);
 const selectedMode = modeSelect.value;
-const reply = selectedMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
+let reply = "";
+if (selectedMode === "chaotic") reply = generateChaoticReply(words);
+else if (selectedMode === "grammar") reply = generateGrammarReply(words);
+else reply = generateComplexReply(words);
 appendMessage("Meebo", reply, "meebo-msg");
 }, 500);
 }
@@ -315,7 +339,7 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 
 brainUpload.addEventListener('change', (event) => {
 const files = event.target.files; if (!files || files.length === 0) return;
-const file = files[0]; const reader = new FileReader();
+const file = files; const reader = new FileReader();
 reader.onload = function(e) {
 try {
 const uploadedJson = JSON.parse(e.target.result);
@@ -331,13 +355,6 @@ reader.readAsText(file);
 
 brainSelect.addEventListener('change', (e) => { activeBrainId = e.target.value; loadActiveBrain(); });
 modeSelect.addEventListener('change', () => { updateInterfaceCount(); if (explorerContainer.style.display === "block") renderBrainExplorer(); });
-
-downloadBtn.addEventListener('click', () => {
-const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentBrainData, null, 2));
-const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr);
-downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(downloadAnchor);
-downloadAnchor.click(); downloadAnchor.remove();
-});
 
 sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
