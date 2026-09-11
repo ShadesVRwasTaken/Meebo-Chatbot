@@ -355,7 +355,7 @@ function stopAudioVisualizer() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = "none";
 }
 
-// 📐 VERTICALLY OVERALIGNED DICTIONARY MAPS TO REMOVE EDGE SPILLAGE
+// 📐 VERTICALLY CHUNKED ARRAYS TO PREVENT WORKSPACE SIDE-SCROLL CLIPPING
 function analyzeInputTone(text) {
     const LowerText = text.toLowerCase();
     
@@ -481,13 +481,20 @@ if (recognition) {
         let transcript = event.results[event.results.length - 1].transcript;
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
+        
+        // ⚡ FIXED: Trigger handleSend immediately when text lands so it never gets skipped
+        if (userInput.value.trim() !== "") {
+            setTimeout(() => { handleSend(); }, 150);
+        }
     };
+    
     recognition.onspeechend = () => { recognition.stop(); };
+    
     recognition.onend = () => {
         micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo...";
         stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
-        if (userInput.value.trim() !== "") handleSend();
     };
+    
     recognition.onerror = () => { micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 }
 
@@ -517,13 +524,8 @@ modeSelect.addEventListener('change', () => { updateInterfaceCount(); if (explor
 downloadBtn.addEventListener('click', () => {
 const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentBrainData, null, 2));
 const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr);
-downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(downloadAnchor);
+downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(dataStr);
 downloadAnchor.click(); downloadAnchor.remove();
-});
-
-toggleExplorerBtn.addEventListener('click', () => {
-    if (explorerContainer.style.display === "block") { explorerContainer.style.display = "none"; toggleExplorerBtn.innerText = "🔍 View Brain"; } 
-    else { explorerContainer.style.display = "block"; toggleExplorerBtn.innerText = "🙈 Hide Brain"; renderBrainExplorer(); }
 });
 
 sendBtn.addEventListener('click', handleSend);
