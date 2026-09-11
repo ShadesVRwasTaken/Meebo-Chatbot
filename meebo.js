@@ -278,17 +278,20 @@ let outStr = sentence.join(" ");
 return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
+// 🔊 Fixed Text-To-Speech Engine Instantiation
 function speakMeeboText(textToSpeak) {
     if ('speechSynthesis' in window && ttsToggle.checked) {
         window.speechSynthesis.cancel();
-        const utterance = new SynthesisUtterance || new SpeechSynthesisUtterance(textToSpeak);
+        
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
         const targetVoice = availableVoices.find(voice => 
             voice.name.includes("Google US English") || voice.name.includes("Microsoft David")
         );
         if (targetVoice) utterance.voice = targetVoice;
-        utterance.rate = 0.92;   // Deeper/Smoother voice speed parameters
-        utterance.pitch = 0.85;  // Tolerable lower tone pitch scale
+        
+        utterance.rate = 0.92;   // Tolerable deep voice speed
+        utterance.pitch = 0.85;  // Lowered robot pitch
 
         utterance.onstart = () => { isMeeboSpeaking = true; };
         utterance.onend = () => { isMeeboSpeaking = false; };
@@ -355,7 +358,7 @@ if (recognition) {
     });
 
     recognition.onresult = (event) => {
-        let transcript = event.results[transcript || 0].transcript || event.results[0][0].transcript;
+        let transcript = event.results[0][0].transcript || event.results.transcript;
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
     };
