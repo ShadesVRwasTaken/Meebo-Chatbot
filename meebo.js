@@ -1,4 +1,4 @@
-// meebo.js - Part 1: Elements & State Hook Allocations
+// meebo.js - Part 1: Elements Mapping Core
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
@@ -28,41 +28,29 @@ const colorBgPanel = document.getElementById('color-bg-panel');
 const colorAccent = document.getElementById('color-accent');
 const colorBubble = document.getElementById('color-bubble');
 
-// 🖥️ PANEL HANDLES & CALL SYSTEM LINKS
+// 🖥️ PANEL EXPANSION SYSTEM HANDLES
 const expandSidebarBtn = document.getElementById('expand-sidebar-btn');
 const expandChatBtn = document.getElementById('expand-chat-btn');
-const expandCallBtn = document.getElementById('expand-call-btn');
-const callToggleBtn = document.getElementById('call-toggle-btn');
-const hangupBtn = document.getElementById('hangup-btn');
-const localVideoFeed = document.getElementById('local-video-feed');
 const emojiPanel = document.getElementById('emoji-panel');
 
-// 📊 CANVAS HANDLES
+// 📊 AUDIO OVERLAY CANVAS HANDLES
 const canvas = document.getElementById('visualizer-canvas');
 const ctx = canvas.getContext('2d');
-const callCanvas = document.getElementById('meebo-call-canvas');
-const callCtx = callCanvas.getContext('2d');
 
 let animationFrameId = null;
-let callAnimationFrameId = null;
 let audioContext = null;
 let analyser = null;
 let micStream = null;
-let webcamStream = null;
 let sourceNode = null;
 let isVisualizerActive = false;
 let syntheticWavePhase = 0; 
-let isCallRoomActive = false;
 
 let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
 let isMeeboSpeaking = false;
 
-// 🔒 TIME-BASED SAFETY GATE: Stops double execution text results
-let lastVoiceSentTime = 0;
-
-// Web Speech API Instantiation
+// Web Speech API Instantiation 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
 if (SpeechRecognition) {
@@ -73,10 +61,22 @@ if (SpeechRecognition) {
 }
 
 const themesMap = {
-emerald: { main: "#0b0b10", panel: "rgba(30, 30, 45, 0.4)", border: "rgba(255, 255, 255, 0.08)", accent: "#0ebd84", hover: "#0cb37d", bubble: "#1e1e2d", txt: "#f1f1f1" },
-cyberpunk: { main: "#05050a", panel: "rgba(255, 0, 85, 0.05)", border: "rgba(255, 0, 85, 0.2)", accent: "#00f0ff", hover: "#00b8c7", bubble: "#1a0826", txt: "#00f0ff" },
-midnight: { main: "#06040d", panel: "rgba(155, 93, 229, 0.06)", border: "rgba(155, 93, 229, 0.2)", accent: "#9b5de5", hover: "#7b3fd3", bubble: "#150e26", txt: "#f3effa" },
-monochrome: { main: "#080808", panel: "rgba(255, 255, 255, 0.03)", border: "rgba(255, 255, 255, 0.08)", accent: "#e0e0e0", hover: "#b5b5b5", bubble: "#161616", txt: "#ffffff" }
+emerald: { 
+    main: "#0b0b10", panel: "rgba(30,30,45,0.4)", border: "rgba(255,255,255,0.08)", 
+    accent: "#0ebd84", hover: "#0cb37d", bubble: "#1e1e2d", txt: "#f1f1f1" 
+},
+cyberpunk: { 
+    main: "#05050a", panel: "rgba(255,0,85,0.05)", border: "rgba(255,0,85,0.2)", 
+    accent: "#00f0ff", hover: "#00b8c7", bubble: "#1a0826", txt: "#00f0ff" 
+},
+midnight: { 
+    main: "#06040d", panel: "rgba(155,93,229,0.06)", border: "rgba(155,93,229,0.2)", 
+    accent: "#9b5de5", hover: "#7b3fd3", bubble: "#150e26", txt: "#f3effa" 
+},
+monochrome: { 
+    main: "#080808", panel: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)", 
+    accent: "#e0e0e0", hover: "#b5b5b5", bubble: "#161616", txt: "#ffffff" 
+}
 };
 
 function applyThemeObject(t) {
@@ -99,7 +99,7 @@ if (themePresetsSelect && themePresetsSelect.value === "custom") applyThemeObjec
 }
 
 function adjustBrightness(hex, percent) {
-let R = parseInt(hex.substring(1,3),16), G = parseInt(hex.substring(3,5),16), B = parseInt(hex.substring(3,5),16);
+let R = parseInt(hex.substring(1,3),16), G = parseInt(hex.substring(3,5),16), B = parseInt(hex.substring(5,7),16);
 R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100);
 R = (R<255)?R:255; G = (G<255)?G:255; B = (B<255)?B:255;
 R = (R<0)?0:R; G = (G<0)?0:B; B = (B<0)?0:B;
@@ -109,25 +109,30 @@ const bHex = (B.toString(16).length==1)?"0"+B.toString(16):B.toString(16);
 return `#${rHex}${gHex}${bHex}`;
 }
 
+if (themePresetsSelect) {
+    themePresetsSelect.addEventListener('change', (e) => {
+    const val = e.target.value;
+    localStorage.setItem('meebo_theme_preset_selection', val);
+    if (val === "custom") {
+    customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto"; saveCustomColors();
+    } else {
+    customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; applyThemeObject(themesMap[val]);
+    }
+    });
+}
+
 expandSidebarBtn.addEventListener('click', () => {
     document.body.classList.toggle('sidebar-fullscreen');
-    document.body.classList.remove('chat-fullscreen', 'call-fullscreen');
+    document.body.classList.remove('chat-fullscreen');
     expandSidebarBtn.innerText = document.body.classList.contains('sidebar-fullscreen') ? "✕" : "⛶";
-    expandChatBtn.innerText = "⛶"; expandCallBtn.innerText = "⛶";
+    expandChatBtn.innerText = "⛶";
 });
 
 expandChatBtn.addEventListener('click', () => {
     document.body.classList.toggle('chat-fullscreen');
-    document.body.classList.remove('sidebar-fullscreen', 'call-fullscreen');
+    document.body.classList.remove('sidebar-fullscreen');
     expandChatBtn.innerText = document.body.classList.contains('chat-fullscreen') ? "✕" : "⛶";
-    expandSidebarBtn.innerText = "⛶"; expandCallBtn.innerText = "⛶";
-});
-
-expandCallBtn.addEventListener('click', () => {
-    document.body.classList.toggle('call-fullscreen');
-    document.body.classList.remove('sidebar-fullscreen', 'chat-fullscreen');
-    expandCallBtn.innerText = document.body.classList.contains('call-fullscreen') ? "✕" : "⛶";
-    expandSidebarBtn.innerText = "⛶"; expandChatBtn.innerText = "⛶";
+    expandSidebarBtn.innerText = "⛶";
 });
 
 function loadSavedThemeSettings() {
@@ -141,6 +146,7 @@ colorBgMain.value = c.main; colorBgPanel.value = c.panel; colorAccent.value = c.
 if (savedPreset === "custom" && savedCustom) {
 applyThemeObject(JSON.parse(savedCustom));
 } else {
+if (customColorControls) { customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; }
 applyThemeObject(themesMap[savedPreset] || themesMap.emerald);
 }
 }
@@ -349,45 +355,37 @@ function stopAudioVisualizer() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); canvas.style.display = "none";
 }
 
-function runCallRoomVisualizer() {
-    if (!isCallRoomActive) return;
-    callAnimationFrameId = requestAnimationFrame(runCallRoomVisualizer);
-    callCanvas.width = callCanvas.offsetWidth; callCanvas.height = callCanvas.offsetHeight;
-    callCtx.clearRect(0, 0, callCanvas.width, callCanvas.height);
-    callCtx.lineWidth = 3; callCtx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || "#0ebd84";
-    callCtx.beginPath();
-    const w = callCanvas.width; const h = callCanvas.height; const midY = h / 2;
-    
-    if (isMeeboSpeaking) {
-        syntheticWavePhase += 0.08;
-        for (let x = 0; x < w; x++) {
-            const y = midY + Math.sin(x * 0.03 + syntheticWavePhase) * Math.cos(x * 0.01 + syntheticWavePhase) * 20;
-            if (x === 0) callCtx.moveTo(x, y); else callCtx.lineTo(x, y);
-        }
-    } else {
-        syntheticWavePhase += 0.02;
-        for (let x = 0; x < w; x++) {
-            const y = midY + Math.sin(x * 0.01 + syntheticWavePhase) * 2;
-            if (x === 0) callCtx.moveTo(x, y); else callCtx.lineTo(x, y);
-        }
-    }
-    callCtx.stroke();
-}
-
+// 📐 VERTICALLY OVERALIGNED DICTIONARY MAPS TO REMOVE EDGE SPILLAGE
 function analyzeInputTone(text) {
     const LowerText = text.toLowerCase();
-    const kindWords = ["love", "happy", "nice", "good", "great", "cool", "friend", "best", "thank", "awesome", "please", "sweet", "calm", "slow"];
-    const angryWords = ["hate", "mad", "angry", "stop", "bad", "worst", "broken", "dumb", "stupid", "annoying", "loud", "fast", "shut", "kill"];
-    let score = 0; kindWords.forEach(w => { if(LowerText.includes(w)) score++; }); angryWords.forEach(w => { if(LowerText.includes(w)) score--; });
-    if (text === text.toUpperCase() && text.replace(/[^a-zA-Z]/g, "").length > 3) score -= 2;
-    if (score > 0) return "kind"; if (score < 0) return "angry"; return "neutral";
+    
+    const kindWords = [
+        "love", "happy", "nice", "good", "great", 
+        "cool", "friend", "best", "thank", "awesome", 
+        "please", "sweet", "calm", "slow"
+    ];
+    
+    const angryWords = [
+        "hate", "mad", "angry", "stop", "bad", 
+        "worst", "broken", "dumb", "stupid", "annoying", 
+        "loud", "fast", "shut", "kill"
+    ];
+    
+    let score = 0;
+    kindWords.forEach(w => { if(LowerText.includes(w)) score++; });
+    angryWords.forEach(w => { if(LowerText.includes(w)) score--; });
+    
+    if (text === text.toUpperCase() && text.replace(/[^a-zA-Z]/g, "").length > 3) {
+        score -= 2;
+    }
+    
+    if (score > 0) return "kind";
+    if (score < 0) return "angry";
+    return "neutral";
 }
 
 function speakMeeboText(textToSpeak, calculatedTone) {
-    // Stop any speech recognition immediately before talking to prevent picking up echoes
-    if (isCallRoomActive && recognition) { try { recognition.stop(); } catch(e){} }
-
-    if ('speechSynthesis' in window && (ttsToggle.checked || isCallRoomActive)) {
+    if ('speechSynthesis' in window && ttsToggle.checked) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
@@ -400,58 +398,37 @@ function speakMeeboText(textToSpeak, calculatedTone) {
             else if (calculatedTone === "kind") { chosenRate = 0.75; chosenPitch = 0.55; }
         }
         utterance.rate = chosenRate; utterance.pitch = chosenPitch;
-        
-        // Safety Clean Fallback function (Fixes Chromebook freeze bug)
-        const cleanAfterSpeaking = () => {
-            isMeeboSpeaking = false;
-            stopAudioVisualizer();
-            if (isCallRoomActive && recognition) {
-                setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
-            }
-        };
-
-        // Fallback timer: forces unlock after 10 seconds if Chromebook fails to fire onend
-        const fallbackTimeout = setTimeout(cleanAfterSpeaking, 10000);
-
-        utterance.onstart = () => { 
-            isMeeboSpeaking = true; 
-            if(!isCallRoomActive) startAudioVisualizer("tts", calculatedTone); 
-        };
-        utterance.onend = () => { 
-            clearTimeout(fallbackTimeout);
-            cleanAfterSpeaking();
-        };
-        utterance.onerror = () => { 
-            clearTimeout(fallbackTimeout);
-            cleanAfterSpeaking();
-        };
+        utterance.onstart = () => { isMeeboSpeaking = true; startAudioVisualizer("tts", calculatedTone); };
+        utterance.onend = () => { isMeeboSpeaking = false; stopAudioVisualizer(); };
+        utterance.onerror = () => { isMeeboSpeaking = false; stopAudioVisualizer(); };
         window.speechSynthesis.speak(utterance);
-    } else {
-        // If TTS toggle is turned off, instantly release recognition loop
-        if (isCallRoomActive && recognition) {
-            setTimeout(() => { try { recognition.start(); } catch(e){} }, 300);
-        }
     }
 }
 
-function handleSend(customText = null) {
-    const text = customText !== null ? customText.trim() : userInput.value.trim(); 
-    if (!text) return;
-    
-    if (customText === null) userInput.value = "";
+function handleWipe() {
+currentBrainData = { chaotic: {}, grammar: {} }; saveActiveBrain(); updateInterfaceCount();
+if (explorerContainer.style.display === "block") renderBrainExplorer();
+appendMessage("System", `🚨 wiped profile [${activeBrainId}] database parameters.`, "system-msg");
+}
 
-    appendMessage("You", text, "user-msg");
-    const strategy = learnSelect.value; 
-    if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
-    if (strategy === "silent") return;
+function handleSend() {
+const text = userInput.value.trim(); if (!text) return;
+appendMessage("You", text, "user-msg"); userInput.value = "";
+if (text.toLowerCase() === "meebo wipe memory") { handleWipe(); return; }
 
+const strategy = learnSelect.value;
+if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
+if (strategy === "silent") return;
+
+const isAskingQuestion = text.endsWith("?"); const mentionedName = text.toLowerCase().includes("meebo");
+
+if (isAskingQuestion || mentionedName || strategy === "adaptive") {
     setTimeout(() => {
-        const words = text.trim().split(/\s+/); 
-        const currentTone = analyzeInputTone(text);
+        const words = text.trim().split(/\s+/); const currentTone = analyzeInputTone(text);
         let activeMode = modeSelect.value;
-        if (emotionToggle.checked) { 
-            if (currentTone === "angry") activeMode = "chaotic"; 
-            if (currentTone === "kind") activeMode = "grammar"; 
+        if (emotionToggle.checked) {
+            if (currentTone === "angry") activeMode = "chaotic";
+            if (currentTone === "kind") activeMode = "grammar";
         }
         const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
         let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
@@ -459,66 +436,21 @@ function handleSend(customText = null) {
         speakMeeboText(reply, currentTone);
     }, 500);
 }
-
-function setupAlwaysListeningCall() {
-    if (!recognition) return;
-    
-    recognition.onresult = (event) => {
-        if (isMeeboSpeaking) return;
-        
-        const currentTime = Date.now();
-        // 🔒 COOLING DEBOUNCE: Blocks double text execution requests if fired within 2 seconds
-        if (currentTime - lastVoiceSentTime < 2000) return;
-        
-        let transcript = event.results[event.results.length - 1][0].transcript; // Fixed nested result drilling
-        transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
-        
-        if (isCallRoomActive && transcript.toLowerCase().includes("meebo")) {
-            lastVoiceSentTime = currentTime; // Lock the time gate
-            appendMessage("You (Voice)", transcript, "user-msg"); 
-            handleSend(transcript);
-        } else if (!isCallRoomActive) { 
-            userInput.value = transcript; 
-        }
-    };
-    
-    recognition.onend = () => {
-        if (isCallRoomActive && !isMeeboSpeaking) { 
-            setTimeout(() => { try { recognition.start(); } catch(err) {} }, 200);
-        } else if (!isCallRoomActive) {
-            micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; 
-            userInput.placeholder = "Type a message to Meebo..."; 
-            stopAudioVisualizer();
-            if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-            if (userInput.value.trim() !== "") handleSend();
-        }
-    };
 }
 
-callToggleBtn.addEventListener('click', async () => {
-    document.body.classList.add('call-active'); isCallRoomActive = true;
-    try {
-        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); 
-        localVideoFeed.srcObject = webcamStream;
-        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
-        sourceNode = audioContext.createMediaStreamSource(webcamStream); sourceNode.connect(analyser);
-        runCallRoomVisualizer(); setupAlwaysListeningCall();
-        if (recognition) { try { recognition.start(); } catch(e){} }
-    } catch(err) {
-        alert("Camera permissions blocked."); document.body.classList.remove('call-active'); isCallRoomActive = false;
-    }
-});
+function updateInterfaceCount() {
+if (vocabCount && currentBrainData) {
+const mode = modeSelect.value; const target = currentBrainData[mode] || {};
+vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
+}
+}
 
-hangupBtn.addEventListener('click', () => {
-    document.body.classList.remove('call-active', 'call-fullscreen'); isCallRoomActive = false; expandCallBtn.innerText = "⛶";
-    if (recognition) { try { recognition.stop(); } catch(e){} }
-    if (callAnimationFrameId) cancelAnimationFrame(callAnimationFrameId);
-    if (webcamStream) { webcamStream.getTracks().forEach(track => track.stop()); webcamStream = null; }
-    localVideoFeed.srcObject = null; stopAudioVisualizer();
-});
-
-const emojisList = ["🤖", "🦾", "👾", "🚀", "⚡", "🔋", "🧠", "✨", "🔥", "💬", "🎮", "🛸", "👀", "👍", "👑", "❤️", "⭐", "🎵"];
+// 😊 VERTICAL STACKED EMOJI SELECTIONS MATRIX
+const emojisList = [
+    "🤖", "🦾", "👾", "🚀", "⚡", "🔋", 
+    "🧠", "✨", "🔥", "💬", "🎮", "🛸", 
+    "👀", "👍", "👑", "❤️", "⭐", "🎵"
+];
 emojisList.forEach(emoji => {
     const btn = document.createElement('button'); btn.className = 'emoji-btn'; btn.innerText = emoji; btn.type = 'button';
     btn.addEventListener('click', () => { userInput.value += emoji; userInput.focus(); });
@@ -527,7 +459,7 @@ emojisList.forEach(emoji => {
 
 if (recognition) {
     micBtn.addEventListener('click', async () => {
-        if (isMeeboSpeaking || isCallRoomActive) return;
+        if (isMeeboSpeaking) return;
         if (micBtn.classList.contains('listening')) { recognition.stop(); } else {
             window.speechSynthesis.cancel(); isMeeboSpeaking = false;
             try {
@@ -544,6 +476,19 @@ if (recognition) {
             }, 100);
         }
     });
+
+    recognition.onresult = (event) => {
+        let transcript = event.results[event.results.length - 1].transcript;
+        transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
+        userInput.value = transcript;
+    };
+    recognition.onspeechend = () => { recognition.stop(); };
+    recognition.onend = () => {
+        micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo...";
+        stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
+        if (userInput.value.trim() !== "") handleSend();
+    };
+    recognition.onerror = () => { micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 }
 
 if ('speechSynthesis' in window) {
@@ -567,13 +512,6 @@ try {
 }; reader.readAsText(file);
 });
 
-function updateInterfaceCount() {
-if (vocabCount && currentBrainData) {
-const mode = modeSelect.value; const target = currentBrainData[mode] || {};
-vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
-}
-}
-
 brainSelect.addEventListener('change', (e) => { activeBrainId = e.target.value; loadActiveBrain(); });
 modeSelect.addEventListener('change', () => { updateInterfaceCount(); if (explorerContainer.style.display === "block") renderBrainExplorer(); });
 downloadBtn.addEventListener('click', () => {
@@ -581,11 +519,6 @@ const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.string
 const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr);
 downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(downloadAnchor);
 downloadAnchor.click(); downloadAnchor.remove();
-});
-
-toggleExplorerBtn.addEventListener('click', () => {
-    if (explorerContainer.style.display === "block") { explorerContainer.style.display = "none"; toggleExplorerBtn.innerText = "🔍 View Brain"; } 
-    else { explorerContainer.style.display = "block"; toggleExplorerBtn.innerText = "🙈 Hide Brain"; renderBrainExplorer(); }
 });
 
 loadIndex(); loadSavedThemeSettings(); loadActiveBrain();

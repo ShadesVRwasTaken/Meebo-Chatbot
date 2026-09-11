@@ -36,7 +36,7 @@ transition: background-color 0.3s ease;
 position: relative;
 }
 
-/* 🖥️ TRIPLE WINDOW EXPANSION LAYOUT */
+/* 🖥️ DYNAMIC GRID & WINDOW OVERRIDES */
 .sidebar {
 width: 340px;
 display: flex;
@@ -44,7 +44,7 @@ flex-direction: column;
 gap: 15px;
 height: 100%;
 overflow-y: auto;
-transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, padding 0.3s;
+transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
 position: relative;
 flex-shrink: 0;
 }
@@ -56,33 +56,22 @@ height: 100%;
 transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 position: relative;
 }
-.call-pane {
-width: 0px;
-opacity: 0;
-pointer-events: none;
-display: flex;
-flex-direction: column;
-gap: 15px;
-height: 100%;
-transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease, padding 0.3s;
-flex-shrink: 0;
+
+/* Window Expansion Modifiers */
+body.sidebar-fullscreen .main-chat-pane {
+display: none !important;
 }
-
-/* 📞 Call Room Screen States */
-body.call-active .call-pane {
-width: 380px;
-opacity: 1;
-pointer-events: auto;
+body.sidebar-fullscreen .sidebar {
+width: 100% !important;
+max-width: 100% !important;
 }
-
-/* Fullscreen Window Modifiers */
-body.sidebar-fullscreen .main-chat-pane, body.sidebar-fullscreen .call-pane { display: none !important; }
-body.sidebar-fullscreen .sidebar { width: 100% !important; max-width: 100% !important; }
-
-body.chat-fullscreen .sidebar, body.chat-fullscreen .call-pane { width: 0px !important; opacity: 0 !important; pointer-events: none !important; margin: 0 !important; padding: 0 !important; }
-
-body.call-fullscreen .sidebar, body.call-fullscreen .main-chat-pane { display: none !important; }
-body.call-fullscreen .call-pane { width: 100% !important; max-width: 100% !important; }
+body.chat-fullscreen .sidebar {
+width: 0px !important;
+opacity: 0 !important;
+pointer-events: none !important;
+padding: 0 !important;
+margin: 0 !important;
+}
 
 .panel-card {
 background: var(--bg-panel);
@@ -120,7 +109,6 @@ color: var(--accent-color);
 background: rgba(255, 255, 255, 0.05);
 transform: scale(1.05);
 }
-
 h1 {
 font-size: 1.5rem;
 font-weight: 800;
@@ -131,88 +119,285 @@ background-clip: text;
 letter-spacing: -0.5px;
 margin-bottom: 5px;
 }
-h3 { font-size: 0.95rem; color: #ffffff; margin-bottom: 12px; font-weight: 600; letter-spacing: 0.2px; }
-h4 { font-size: 0.8rem; color: #8a8a9e; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-.control-stack { display: flex; flex-direction: column; gap: 12px; }
-.control-group { display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem; color: #a0a0b5; }
-.switch-row { flex-direction: row; justify-content: space-between; align-items: center; padding: 4px 0; }
-select { background: #141420; color: #ffffff; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 8px; font-weight: 500; outline: none; cursor: pointer; font-size: 0.85rem; width: 100%; transition: border-color 0.2s; }
-select:focus { border-color: var(--accent-color); }
-
-.util-btn { background: rgba(255, 255, 255, 0.04); font-size: 0.85rem; padding: 8px 14px; color: #fff; border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: 500; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
-.util-btn:hover { background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.15); }
-.btn-danger { background: rgba(169, 50, 52, 0.15); border-color: rgba(169, 50, 52, 0.3); color: #ff5555; }
-.btn-danger:hover { background: rgba(169, 50, 52, 0.25); border-color: rgba(169, 50, 52, 0.5); }
-.action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.emoji-panel { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 4px; max-height: 110px; overflow-y: auto; background: #141420; border-radius: 10px; border: 1px solid var(--border-color); }
-.emoji-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; padding: 4px; border-radius: 6px; transition: transform 0.1s, background 0.2s; text-align: center; }
-.emoji-btn:hover { background: rgba(255, 255, 255, 0.05); transform: scale(1.15); }
-
-/* 📹 DISCORD FEED CHANNELS CARD WRAPPERS */
-.video-feed-card {
-flex: 1;
-background: #11111e;
-border-radius: 14px;
+h3 {
+font-size: 0.95rem;
+color: #ffffff;
+margin-bottom: 12px;
+font-weight: 600;
+letter-spacing: 0.2px;
+}
+h4 {
+font-size: 0.8rem;
+color: #8a8a9e;
+margin-bottom: 8px;
+text-transform: uppercase;
+letter-spacing: 0.5px;
+}
+.control-stack {
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.control-group {
+display: flex;
+flex-direction: column;
+gap: 6px;
+font-size: 0.85rem;
+color: #a0a0b5;
+}
+.switch-row {
+flex-direction: row;
+justify-content: space-between;
+align-items: center;
+padding: 4px 0;
+}
+select {
+background: #141420;
+color: #ffffff;
 border: 1px solid var(--border-color);
-position: relative;
-overflow: hidden;
+padding: 8px 12px;
+border-radius: 8px;
+font-weight: 500;
+outline: none;
+cursor: pointer;
+font-size: 0.85rem;
+width: 100%;
+transition: border-color 0.2s;
+}
+select:focus {
+border-color: var(--accent-color);
+}
+
+.util-btn {
+background: rgba(255, 255, 255, 0.04);
+font-size: 0.85rem;
+padding: 8px 14px;
+color: #fff;
+border: 1px solid var(--border-color);
+border-radius: 8px;
+cursor: pointer;
+font-weight: 500;
+transition: all 0.2s;
 display: flex;
 align-items: center;
 justify-content: center;
-}
-.video-feed-card video {
+gap: 6px;
 width: 100%;
-height: 100%;
-object-fit: cover;
-transform: scaleX(-1); /* Mirror camera feed */
 }
-.feed-label {
-position: absolute;
-bottom: 12px;
-left: 12px;
-background: rgba(0, 0, 0, 0.6);
-padding: 4px 10px;
+.util-btn:hover {
+background: rgba(255, 255, 255, 0.08);
+border-color: rgba(255, 255, 255, 0.15);
+}
+.btn-danger {
+background: rgba(169, 50, 52, 0.15);
+border-color: rgba(169, 50, 52, 0.3);
+color: #ff5555;
+}
+.btn-danger:hover {
+background: rgba(169, 50, 52, 0.25);
+border-color: rgba(169, 50, 52, 0.5);
+}
+.action-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 8px;
+}
+.emoji-panel {
+display: grid;
+grid-template-columns: repeat(6, 1fr);
+gap: 6px;
+padding: 4px;
+max-height: 110px;
+overflow-y: auto;
+background: #141420;
+border-radius: 10px;
+border: 1px solid var(--border-color);
+}
+.emoji-btn {
+background: none;
+border: none;
+font-size: 1.1rem;
+cursor: pointer;
+padding: 4px;
 border-radius: 6px;
+transition: transform 0.1s, background 0.2s;
+text-align: center;
+}
+.emoji-btn:hover {
+background: rgba(255, 255, 255, 0.05);
+transform: scale(1.15);
+}
+#brain-explorer-container {
+background: #09090f;
+border: 1px solid var(--border-color);
+border-radius: 12px;
+padding: 12px;
+max-height: 160px;
+overflow-y: auto;
 font-size: 0.8rem;
-font-weight: 500;
-backdrop-filter: blur(4px);
-border: 1px solid rgba(255,255,255,0.05);
-z-index: 5;
+box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+margin-top: 10px;
+display: none;
 }
-.call-canvas-overlay {
-position: absolute;
-top: 0; left: 0; width: 100%; height: 100%;
-pointer-events: none;
-z-index: 4;
+.brain-node {
+margin-bottom: 6px;
+padding-bottom: 4px;
+border-bottom: 1px solid rgba(255,255,255,0.02);
 }
-
-#brain-explorer-container { background: #09090f; border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; max-height: 160px; overflow-y: auto; font-size: 0.8rem; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); margin-top: 10px; display: none; }
-.brain-node { margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.02); }
-.brain-key { color: var(--accent-color); font-weight: bold; cursor: pointer; }
+.brain-key {
+color: var(--accent-color);
+font-weight: bold;
+cursor: pointer;
+}
 .brain-key::before { content: "▶ "; font-size: 0.7rem; color: #555; }
 .brain-node.expanded .brain-key::before { content: "▼ "; color: var(--accent-color); }
-.brain-values { display: none; margin-left: 12px; color: #8a8a9e; font-family: monospace; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 6px; margin-top: 4px; word-break: break-all; }
+.brain-values {
+display: none;
+margin-left: 12px;
+color: #8a8a9e;
+font-family: monospace;
+background: rgba(0,0,0,0.2);
+padding: 4px;
+border-radius: 6px;
+margin-top: 4px;
+word-break: break-all;
+}
 .brain-node.expanded .brain-values { display: block; }
-
-#chat-box { flex: 1; background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--border-color); border-radius: 20px; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); margin-bottom: 16px; position: relative; }
-.chat-header-overlay { position: absolute; top: 15px; right: 15px; z-index: 15; display: flex; gap: 10px; }
-.msg { padding: 12px 16px; border-radius: 16px; max-width: 70%; word-break: break-word; font-size: 0.95rem; line-height: 1.45; box-shadow: 0 4px 12px rgba(0,0,0,0.1); animation: fadeIn 0.2s ease-out; }
-.user-msg { background: var(--accent-gradient); color: #050508; font-weight: 500; align-self: flex-end; border-bottom-right-radius: 4px; }
-.meebo-msg { background: var(--bubble-meebo); color: var(--bubble-text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.03); }
-.system-msg { background: rgba(255, 255, 255, 0.02); color: #6a6a7e; text-align: center; max-width: 90%; font-family: monospace; font-size: 0.75rem; border: 1px dashed var(--border-color); padding: 6px 12px; align-self: center; border-radius: 8px; box-shadow: none; }
-
-#input-area { display: flex; gap: 12px; width: 100%; }
-.input-wrapper { position: relative; flex: 1; display: flex; }
-input[type=text] { flex: 1; padding: 16px 20px; border-radius: 14px; border: 1px solid var(--border-color); background: var(--bg-panel); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: #fff; font-size: 0.95rem; outline: none; position: relative; z-index: 1; box-shadow: 0 4px 20px rgba(0,0,0,0.15); transition: border-color 0.2s, box-shadow 0.2s; }
-input[type=text]:focus { border-color: var(--accent-color); box-shadow: 0 4px 24px rgba(14, 189, 132, 0.15); }
-#visualizer-canvas { position: absolute; left: 2px; top: 2px; width: calc(100% - 4px); height: calc(100% - 4px); border-radius: 12px; pointer-events: none; z-index: 2; display: none; }
-#mic-btn, #send-btn { border: 1px solid var(--border-color); color: white; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-#mic-btn { padding: 0 18px; border-radius: 14px; background: var(--bg-panel); backdrop-filter: blur(12px); font-size: 1.2rem; }
+#chat-box {
+flex: 1;
+background: var(--bg-panel);
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
+border: 1px solid var(--border-color);
+border-radius: 20px;
+padding: 24px;
+overflow-y: auto;
+display: flex;
+flex-direction: column;
+gap: 16px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+margin-bottom: 16px;
+position: relative;
+}
+.chat-header-overlay {
+position: absolute;
+top: 15px;
+right: 15px;
+z-index: 15;
+}
+.msg {
+padding: 12px 16px;
+border-radius: 16px;
+max-width: 70%;
+word-break: break-word;
+font-size: 0.95rem;
+line-height: 1.45;
+box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+animation: fadeIn 0.2s ease-out;
+}
+.user-msg {
+background: var(--accent-gradient);
+color: #050508;
+font-weight: 500;
+align-self: flex-end;
+border-bottom-right-radius: 4px;
+}
+.meebo-msg {
+background: var(--bubble-meebo);
+color: var(--bubble-text);
+align-self: flex-start;
+border-bottom-left-radius: 4px;
+border: 1px solid rgba(255,255,255,0.03);
+}
+.system-msg {
+background: rgba(255, 255, 255, 0.02);
+color: #6a6a7e;
+text-align: center;
+max-width: 90%;
+font-family: monospace;
+font-size: 0.75rem;
+border: 1px dashed var(--border-color);
+padding: 6px 12px;
+align-self: center;
+border-radius: 8px;
+box-shadow: none;
+}
+#input-area {
+display: flex;
+gap: 12px;
+width: 100%;
+}
+.input-wrapper {
+position: relative;
+flex: 1;
+display: flex;
+}
+input[type=text] {
+flex: 1;
+padding: 16px 20px;
+border-radius: 14px;
+border: 1px solid var(--border-color);
+background: var(--bg-panel);
+backdrop-filter: blur(12px);
+-webkit-backdrop-filter: blur(12px);
+color: #fff;
+font-size: 0.95rem;
+outline: none;
+position: relative;
+z-index: 1;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type=text]:focus {
+border-color: var(--accent-color);
+box-shadow: 0 4px 24px rgba(14, 189, 132, 0.15);
+}
+#visualizer-canvas {
+position: absolute;
+left: 2px; top: 2px;
+width: calc(100% - 4px);
+height: calc(100% - 4px);
+border-radius: 12px;
+pointer-events: none;
+z-index: 2;
+display: none;
+}
+#mic-btn, #send-btn {
+border: 1px solid var(--border-color);
+color: white;
+cursor: pointer;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+#mic-btn {
+padding: 0 18px;
+border-radius: 14px;
+background: var(--bg-panel);
+backdrop-filter: blur(12px);
+font-size: 1.2rem;
+}
 #mic-btn:hover { background: rgba(255,255,255,0.05); }
-#mic-btn.listening { background: #ff4444 !important; border-color: #ff5555 !important; animation: pulse 1.5s infinite; }
-#send-btn { padding: 0 28px; border-radius: 14px; border: none; background: var(--accent-gradient); color: #050508; font-weight: 700; font-size: 0.95rem; }
+#mic-btn.listening {
+background: #ff4444 !important;
+border-color: #ff5555 !important;
+animation: pulse 1.5s infinite;
+}
+#send-btn {
+padding: 0 28px;
+border-radius: 14px;
+border: none;
+background: var(--accent-gradient);
+color: #050508;
+font-weight: 700;
+font-size: 0.95rem;
+}
 .upload-wrapper { position: relative; overflow: hidden; }
-.upload-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; width: 100%; }
+.upload-wrapper input[type=file] {
+position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; height: 100%; width: 100%;
+}
 .color-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #a0a0b5; }
 input[type=color] { border: none; width: 35px; height: 22px; border-radius: 4px; cursor: pointer; background: none; }
 .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
@@ -227,14 +412,14 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
 </head>
 <body>
 
-<!-- COL 1: LEFT SIDEBAR CONTROL SUB-SYSTEMS -->
+<!-- LEFT SIDEBAR CONTROL SUB-SYSTEMS -->
 <div class="sidebar" id="sidebar-node">
     <div class="panel-card">
         <div class="pane-header-row">
             <h1>Meebo Terminal</h1>
-            <button class="fullscreen-toggle-btn" id="expand-sidebar-btn" title="Toggle Sidebar">⛶</button>
+            <button class="fullscreen-toggle-btn" id="expand-sidebar-btn" title="Toggle Fullscreen Sidebar">⛶</button>
         </div>
-        <p style="font-size: 0.75rem; color: #6a6a7e;">Firmware v2.5 • ChromeOS Audio</p>
+        <p style="font-size: 0.75rem; color: #6a6a7e;">Firmware v2.4 • ChromeOS Base</p>
     </div>
 
     <div class="panel-card">
@@ -289,9 +474,12 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
         </div>
     </div>
 
+    <!-- 😊 EMOJI SELECTOR MATRIX PANEL -->
     <div class="panel-card">
         <h3>Meebo Expression Matrix</h3>
-        <div class="emoji-panel" id="emoji-panel"></div>
+        <div class="emoji-panel" id="emoji-panel">
+            <!-- Programmatically populated by meebo.js to keep layout footprint small -->
+        </div>
     </div>
 
     <div class="panel-card" style="margin-top: auto;">
@@ -303,12 +491,10 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
     </div>
 </div>
 
-<!-- COL 2: MAIN IMMERSIVE CHAT WINDOW CONSOLE -->
+<!-- RIGHT MAIN IMMERSIVE CHAT WINDOW CONSOLE -->
 <div class="main-chat-pane" id="chat-pane-node">
     <div id="chat-box">
         <div class="chat-header-overlay">
-            <!-- 📞 NEW: Discord Call Interface Entry -->
-            <button class="util-btn" id="call-toggle-btn" style="background: rgba(14, 189, 132, 0.15); border-color: rgba(14, 189, 132, 0.4); color: var(--accent-color); font-weight: bold; width: auto; padding: 6px 14px;">📞 Call Meebo</button>
             <button class="fullscreen-toggle-btn" id="expand-chat-btn" title="Toggle Chat Box">⛶</button>
         </div>
         <div class="msg meebo-msg">System diagnostic active. Audio canvas pipelines mapped directly on terminal text interfaces. Welcome back.</div>
@@ -322,29 +508,6 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
         <button id="mic-btn" title="Talk to Meebo">🎙️</button>
         <button id="send-btn">Send</button>
     </div>
-</div>
-
-<!-- COL 3: NEW DISCORD-STYLE SCI-FI CALL PANEL -->
-<div class="call-pane" id="call-pane-node">
-    <div class="panel-card" style="padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-        <h3 style="margin: 0; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">🔴 Active Voice Call</h3>
-        <button class="fullscreen-toggle-btn" id="expand-call-btn" title="Toggle Fullscreen Call Room">⛶</button>
-    </div>
-    
-    <!-- User Camera Feed Grid -->
-    <div class="video-feed-card">
-        <video id="local-video-feed" autoplay playsinline muted></video>
-        <div class="feed-label">🧑 You (Operator)</div>
-    </div>
-    
-    <!-- Meebo AI Vocal Grid -->
-    <div class="video-feed-card" style="background: #090914;">
-        <canvas class="call-canvas-overlay" id="meebo-call-canvas"></canvas>
-        <div style="text-align: center; color: var(--accent-color); font-size: 4rem; z-index: 3; filter: drop-shadow(0 0 15px var(--accent-color));">🤖</div>
-        <div class="feed-label">🤖 Meebo (Always Listening)</div>
-    </div>
-    
-    <button class="util-btn btn-danger" id="hangup-btn" style="padding: 12px; font-weight: bold; border-radius: 12px;">🛑 Disconnect Call</button>
 </div>
 
 <script src="meebo.js"></script>
