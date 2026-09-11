@@ -542,3 +542,4 @@ sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
 loadIndex(); loadSavedThemeSettings(); loadActiveBrain();
+
