@@ -445,7 +445,7 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 }
 }
 
-// 😊 VERTICAL STACKED EMOJI SELECTIONS MATRIX
+// 😊 VERTICAL STACKED EMOJI SELECTIONS MATRIX populator
 const emojisList = [
     "🤖", "🦾", "👾", "🚀", "⚡", "🔋", 
     "🧠", "✨", "🔥", "💬", "🎮", "🛸", 
@@ -520,5 +520,13 @@ const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute(
 downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(downloadAnchor);
 downloadAnchor.click(); downloadAnchor.remove();
 });
+
+toggleExplorerBtn.addEventListener('click', () => {
+    if (explorerContainer.style.display === "block") { explorerContainer.style.display = "none"; toggleExplorerBtn.innerText = "🔍 View Brain"; } 
+    else { explorerContainer.style.display = "block"; toggleExplorerBtn.innerText = "🙈 Hide Brain"; renderBrainExplorer(); }
+});
+
+sendBtn.addEventListener('click', handleSend);
+userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
 loadIndex(); loadSavedThemeSettings(); loadActiveBrain();
