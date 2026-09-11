@@ -73,7 +73,7 @@ function adjustBrightness(hex, percent) {
 let R = parseInt(hex.substring(1,3),16), G = parseInt(hex.substring(3,5),16), B = parseInt(hex.substring(5,7),16);
 R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100);
 R = (R<255)?R:255; G = (G<255)?G:255; B = (B<255)?B:255;
-R = (R<0)?0:R; G = (G<0)?0:G; B = (B<0)?0:B;
+R = (R<0)?0:R; G = (G<0)?0:B; B = (B<0)?0:B;
 const rHex = (R.toString(16).length==1)?"0"+R.toString(16):R.toString(16);
 const gHex = (G.toString(16).length==1)?"0"+G.toString(16):G.toString(16);
 const bHex = (B.toString(16).length==1)?"0"+B.toString(16):B.toString(16);
@@ -278,15 +278,15 @@ let outStr = sentence.join(" ");
 return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
-// 🔊 Chromebook-Optimized Deep Male Movie-Robot Voice Engine
+// 🔊 True Chromebook Sci-Fi Deep Male Voice Synthesizer
 function speakMeeboText(textToSpeak) {
     if ('speechSynthesis' in window && ttsToggle.checked) {
-        window.speechSynthesis.cancel(); // Flush previous queues to prevent Chromebook lockups
+        window.speechSynthesis.cancel(); // Prevent audio stack freezing
         
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
         
-        // Target deep ChromeOS / Chromebook native male voices specifically
+        // 🔮 Targeting deep ChromeOS baseline male vocals natively on Chromebooks
         let targetVoice = availableVoices.find(v => v.name.includes("Chrome OS US English Male"));
         if (!targetVoice) targetVoice = availableVoices.find(v => v.name.includes("Google US English Male"));
         if (!targetVoice) targetVoice = availableVoices.find(v => v.name.includes("Google US English"));
@@ -294,9 +294,9 @@ function speakMeeboText(textToSpeak) {
         
         if (targetVoice) utterance.voice = targetVoice;
         
-        // 🎛️ CHROMEOBOK CINEMATIC MACHINE TUNING
-        utterance.rate = 0.85;   // Heavy mechanical pace
-        utterance.pitch = 0.35;  // Bass-heavy metallic baritone
+        // 🎛️ SCI-FI MALE MACHINE ROBOT PARAMETERS
+        utterance.rate = 0.82;   // Heavy, rhythmic mechanical pace
+        utterance.pitch = 0.35;  // Drops tone way down to unlock that baritone metallic rasp
 
         utterance.onstart = () => { isMeeboSpeaking = true; };
         utterance.onend = () => { isMeeboSpeaking = false; };
@@ -343,7 +343,9 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 
 if (recognition) {
     micBtn.addEventListener('click', () => {
-        if (isMeSpeaking || isMeeboSpeaking) return;
+        // Fix: Removed undefined "isMeSpeaking" condition which was throwing a ReferenceError
+        if (isMeeboSpeaking) return;
+        
         if (micBtn.classList.contains('listening')) {
             recognition.stop();
         } else {
@@ -364,6 +366,7 @@ if (recognition) {
 
     recognition.onresult = (event) => {
         let transcript = event.results[0][0].transcript || event.results.transcript;
+        // 🔮 Auto-Scrub Chromebook Cloud Overrides
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
     };
@@ -383,7 +386,7 @@ if (recognition) {
     micBtn.addEventListener('click', () => { alert("Web Speech API not supported on this browser."); });
 }
 
-// 📦 CHROMEOBOK VOICE ARRAY KICKSTARTER
+// 📦 CHROMEOBOK VOICE ARRAY CACHE WARMER LOOP
 if ('speechSynthesis' in window) {
     window.speechSynthesis.getVoices();
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -393,7 +396,7 @@ if ('speechSynthesis' in window) {
 
 brainUpload.addEventListener('change', (event) => {
 const files = event.target.files; if (!files || files.length === 0) return;
-const file = files; const reader = new FileReader();
+const file = files[0]; const reader = new FileReader();
 reader.onload = function(e) {
 try {
 const uploadedJson = JSON.parse(e.target.result);
