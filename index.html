@@ -15,34 +15,53 @@ h1 { color: #0ebd84; margin: 5px 0; text-align: center; }
 #input-area { display: flex; gap: 10px; }
 input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #333344; background: #1a1a24; color: #fff; }
 button { padding: 10px 20px; border-radius: 6px; border: none; background: #0ebd84; color: white; cursor: pointer; font-weight: bold; }
-.utility-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
-.util-btn { background: #444455; font-size: 0.85em; padding: 6px 12px; }
-select { background: #242432; color: #0ebd84; border: 1px solid #0ebd84; padding: 5px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+.utility-bar { display: flex; flex-direction: column; gap: 8px; background: #242432; padding: 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #333344; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.util-btn { background: #444455; font-size: 0.85em; padding: 6px 12px; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+.upload-btn-wrapper { position: relative; overflow: hidden; display: inline-block; }
+.upload-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+select { background: #1a1a24; color: #0ebd84; border: 1px solid #0ebd84; padding: 5px; border-radius: 4px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
 
-<h1>🤖 Meebo Web Chat</h1>
+<h1>🤖 Meebo Multi-Brain Station</h1>
 
 <div class="utility-bar">
-<!-- 🎛️ NEW: Mode selector dropdown -->
+<!-- Row 1: Profile Chooser & Importer -->
+<div class="row">
 <div>
-<label for="mode-select">Mode: </label>
+<label for="brain-select">🧠 Active Brain: </label>
+<select id="brain-select">
+<option value="default">Default Brain</option>
+</select>
+</div>
+<div class="upload-btn-wrapper">
+<button class="util-btn" style="background: #2196f3;">📂 Upload Brain (.json)</button>
+<input type="file" id="brain-upload" accept=".json" />
+</div>
+</div>
+
+<!-- Row 2: Personality Selector & Downloader -->
+<div class="row">
+<div>
+<label for="mode-select">🎛️ Alg Mode: </label>
 <select id="mode-select">
 <option value="grammar">Grammar (Proper)</option>
 <option value="chaotic">Chaotic (Random)</option>
 </select>
 </div>
 <span>Paths: <strong id="vocab-count">0</strong></span>
-<button id="download-btn" class="util-btn">💾 Download brain.json</button>
+<button id="download-btn" class="util-btn">💾 Download Active Brain</button>
+</div>
 </div>
 
 <div id="chat-box">
-<div class="msg meebo-msg">Hello! I am Meebo. Talk to me to teach me sentences!</div>
+<div class="msg meebo-msg">Welcome to the Multi-Brain Station! Upload a custom memory file or start typing to train the active brain.</div>
 </div>
 
 <div id="input-area">
-<input type="text" id="user-input" placeholder="Type a message to Meebo..." autocomplete="off">
+<input type="text" id="user-input" placeholder="Type a message..." autocomplete="off">
 <button id="send-btn">Send</button>
 </div>
 
