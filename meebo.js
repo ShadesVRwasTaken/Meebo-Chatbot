@@ -278,20 +278,23 @@ let outStr = sentence.join(" ");
 return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
-// 🔊 Fixed Text-To-Speech Engine Instantiation
+// 🔊 Movie Robot Text-To-Speech Engine (Jarvis / C-3PO Style)
 function speakMeeboText(textToSpeak) {
     if ('speechSynthesis' in window && ttsToggle.checked) {
         window.speechSynthesis.cancel();
         
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
-        const targetVoice = availableVoices.find(voice => 
-            voice.name.includes("Google US English") || voice.name.includes("Microsoft David")
-        );
+        
+        // Dynamic search for premium natural human sounding engine tracks
+        let targetVoice = availableVoices.find(voice => voice.name.includes("Natural") && voice.lang.startsWith("en"));
+        if (!targetVoice) targetVoice = availableVoices.find(voice => voice.name.includes("Google US English"));
+        if (!targetVoice) targetVoice = availableVoices.find(voice => voice.name.includes("Microsoft Zira") || voice.name.includes("Microsoft David"));
+        
         if (targetVoice) utterance.voice = targetVoice;
         
-        utterance.rate = 0.92;   // Tolerable deep voice speed
-        utterance.pitch = 0.85;  // Lowered robot pitch
+        utterance.rate = 0.98;   // Steady, deliberate cinematic pace
+        utterance.pitch = 0.92;  // Slightly flattened pitch to sound artificial/synthetic
 
         utterance.onstart = () => { isMeeboSpeaking = true; };
         utterance.onend = () => { isMeeboSpeaking = false; };
@@ -358,7 +361,8 @@ if (recognition) {
     });
 
     recognition.onresult = (event) => {
-        let transcript = event.results[0][0].transcript || event.results.transcript;
+        let transcript = event.results[0].transcript || event.results.transcript;
+        // 🔮 Auto-Scrub Override Rules mapping phonetic speech exceptions back to Meebo
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
     };
