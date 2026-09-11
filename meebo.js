@@ -59,6 +59,9 @@ let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
 let isMeeboSpeaking = false;
 
+// 🔒 SAFETY GATE: Prevents background audio echoes from double-triggering messages
+let isProcessingVoice = false;
+
 // Web Speech API Instantiation
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
@@ -394,45 +397,86 @@ function speakMeeboText(textToSpeak, calculatedTone) {
             else if (calculatedTone === "kind") { chosenRate = 0.75; chosenPitch = 0.55; }
         }
         utterance.rate = chosenRate; utterance.pitch = chosenPitch;
-        utterance.onstart = () => { isMeeboSpeaking = true; if(!isCallRoomActive) startAudioVisualizer("tts", calculatedTone); };
-        utterance.onend = () => { isMeeboSpeaking = false; stopAudioVisualizer(); if(isCallRoomActive && recognition) { try { recognition.start(); } catch(e){} } };
-        utterance.onerror = () => { isMeeboSpeaking = false; stopAudioVisualizer(); if(isCallRoomActive && recognition) { try { recognition.start(); } catch(e){} } };
+        
+        utterance.onstart = () => { 
+            isMeeboSpeaking = true; 
+            if(!isCallRoomActive) startAudioVisualizer("tts", calculatedTone); 
+        };
+        utterance.onend = () => { 
+            isMeeboSpeaking = false; 
+            stopAudioVisualizer(); 
+            // 🔒 FIXED: Check call state explicitly to prevent crashing non-call recognition engines
+            if(isCallRoomActive && recognition) { 
+                try { recognition.start(); } catch(e){} 
+            } 
+        };
+        utterance.onerror = () => { 
+            isMeeboSpeaking = false; 
+            stopAudioVisualizer(); 
+            if(isCallRoomActive && recognition) { 
+                try { recognition.start(); } catch(e){} 
+            } 
+        };
         window.speechSynthesis.speak(utterance);
     }
 }
 
-function handleSend() {
-const text = userInput.value.trim(); if (!text) return;
-appendMessage("You", text, "user-msg"); userInput.value = "";
-const strategy = learnSelect.value; if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
-if (strategy === "silent") return;
+function handleSend(customText = null) {
+    // Allows text extraction from either the textbox element or voice capture parameter directly
+    const text = customText !== null ? customText.trim() : userInput.value.trim(); 
+    if (!text) return;
+    
+    // Safety exit rule: prevents duplicate executions if voice pipeline is locked
+    if (customText === null) userInput.value = "";
 
-setTimeout(() => {
-    const words = text.trim().split(/\s+/); const currentTone = analyzeInputTone(text);
-    let activeMode = modeSelect.value;
-    if (emotionToggle.checked) { if (currentTone === "angry") activeMode = "chaotic"; if (currentTone === "kind") activeMode = "grammar"; }
-    const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
-    let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
-    appendMessage("Meebo" + emotionLabel, reply, "meebo-msg");
-    speakMeeboText(reply, currentTone);
-}, 500);
+    appendMessage("You", text, "user-msg");
+    const strategy = learnSelect.value; 
+    if (strategy === "adaptive" || strategy === "silent") learnFromSentence(text);
+    if (strategy === "silent") return;
+
+    setTimeout(() => {
+        const words = text.trim().split(/\s+/); 
+        const currentTone = analyzeInputTone(text);
+        let activeMode = modeSelect.value;
+        if (emotionToggle.checked) { 
+            if (currentTone === "angry") activeMode = "chaotic"; 
+            if (currentTone === "kind") activeMode = "grammar"; 
+        }
+        const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
+        let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
+        appendMessage("Meebo" + emotionLabel, reply, "meebo-msg");
+        speakMeeboText(reply, currentTone);
+    }, 500);
 }
 
 function setupAlwaysListeningCall() {
     if (!recognition) return;
+    
     recognition.onresult = (event) => {
+        if (isProcessingVoice || isMeeboSpeaking) return;
+        
         let transcript = event.results[event.results.length - 1][0].transcript;
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
-        if (isCallRoomActive) {
-            if (transcript.toLowerCase().includes("meebo")) {
-                appendMessage("You (Voice)", transcript, "user-msg"); userInput.value = transcript; handleSend();
-            }
-        } else { userInput.value = transcript; }
+        
+        if (isCallRoomActive && transcript.toLowerCase().includes("meebo")) {
+            // 🔒 GATE ACTIVATION: Instantly lock the audio pipeline from processing duplicates
+            isProcessingVoice = true; 
+            handleSend(transcript);
+            
+            // Release the pipeline safely after transmission finishes
+            setTimeout(() => { isProcessingVoice = false; }, 600);
+        } else if (!isCallRoomActive) { 
+            userInput.value = transcript; 
+        }
     };
+    
     recognition.onend = () => {
-        if (isCallRoomActive && !isMeeboSpeaking) { try { recognition.start(); } catch(err) {} } 
-        else if (!isCallRoomActive) {
-            micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo..."; stopAudioVisualizer();
+        if (isCallRoomActive && !isMeeboSpeaking) { 
+            try { recognition.start(); } catch(err) {} 
+        } else if (!isCallRoomActive) {
+            micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; 
+            userInput.placeholder = "Type a message to Meebo..."; 
+            stopAudioVisualizer();
             if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
             if (userInput.value.trim() !== "") handleSend();
         }
@@ -442,7 +486,8 @@ function setupAlwaysListeningCall() {
 callToggleBtn.addEventListener('click', async () => {
     document.body.classList.add('call-active'); isCallRoomActive = true;
     try {
-        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); localVideoFeed.srcObject = webcamStream;
+        webcamStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true }); 
+        localVideoFeed.srcObject = webcamStream;
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
         sourceNode = audioContext.createMediaStreamSource(webcamStream); sourceNode.connect(analyser);
