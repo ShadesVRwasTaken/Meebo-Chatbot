@@ -337,19 +337,18 @@ background: none;
 </div>
 </div>
 
-<!-- Row 2: Mode Adjustments -->
+<!-- Row 2: Alg Mode & Stats -->
 <div class="row">
 <div class="control-group">
 <label for="mode-select">Mode:</label>
 <select id="mode-select">
-<!-- 🧠 UPGRADED METRIC SELECTORS -->
-<option value="complex">Complex (4-Word Neural)</option>
-<option value="grammar">Grammar (2-Word Flow)</option>
-<option value="chaotic">Chaotic (Random Echo)</option>
+<option value="grammar">Grammar (Proper)</option>
+<option value="chaotic">Chaotic (Random)</option>
 </select>
 <span>• Paths: <strong id="vocab-count">0</strong></span>
 </div>
 
+<!-- 🎛️ NEW: Behavior Strategy Switch -->
 <div class="control-group">
 <label for="learn-select">Learn Profile:</label>
 <select id="learn-select">
@@ -370,7 +369,7 @@ background: none;
 </div>
 
 <div id="chat-box">
-<div class="msg meebo-msg">Welcome to Meebo Chat! Complex Mode tracks structural loops using full phrases. Type with capital letters and punctuation to teach me!</div>
+<div class="msg meebo-msg">Welcome back to Meebo Chat! Use the "Learn Profile" selector to swap between Adaptive conversation matching, pure text input ingestion, or offline locked execution profiles.</div>
 </div>
 
 <div id="input-area">
