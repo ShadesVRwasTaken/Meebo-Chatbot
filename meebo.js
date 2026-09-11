@@ -324,7 +324,13 @@ if (recognition) {
     });
 
     recognition.onresult = (event) => {
-        userInput.value = event.results[0][0].transcript;
+        let transcript = event.results[0][0].transcript;
+        
+        // 🔮 FIX UP: Instantly maps phonetic cloud errors back to Meebo!
+        transcript = transcript.replace(/\bamiibo\b/gi, "Meebo");
+        transcript = transcript.replace(/\bameebo\b/gi, "Meebo");
+        
+        userInput.value = transcript;
     };
 
     recognition.onspeechend = () => { recognition.stop(); };
