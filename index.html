@@ -7,7 +7,6 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://w3.org viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
 
 <style>
-/* 🎨 CSS Custom Properties Theme Engine Architecture */
 :root {
 --bg-main: #1a1a24;
 --bg-panel: #242432;
@@ -254,8 +253,6 @@ background: var(--accent-hover);
 #vocab-count {
 color: var(--accent-color);
 }
-
-/* ⚙️ Theme Configuration Dialog Box Layout */
 #settings-modal {
 display: none;
 position: fixed;
@@ -318,11 +315,11 @@ background: none;
 <div class="container">
 <div class="header-row">
 <h1>🤖 Meebo Chat</h1>
-<!-- ⚙️ Gear Button to launch settings menu -->
 <button id="open-settings-btn" class="util-btn icon-btn" style="background:transparent; border:none; font-size:1.2rem;">⚙️</button>
 </div>
 
 <div class="utility-bar">
+<!-- Row 1: Profile Management -->
 <div class="row">
 <div class="control-group">
 <label for="brain-select">Brain:</label>
@@ -340,6 +337,7 @@ background: none;
 </div>
 </div>
 
+<!-- Row 2: Alg Mode & Stats -->
 <div class="row">
 <div class="control-group">
 <label for="mode-select">Mode:</label>
@@ -349,6 +347,20 @@ background: none;
 </select>
 <span>• Paths: <strong id="vocab-count">0</strong></span>
 </div>
+
+<!-- 🎛️ NEW: Behavior Strategy Switch -->
+<div class="control-group">
+<label for="learn-select">Learn Profile:</label>
+<select id="learn-select">
+<option value="adaptive">Adaptive (Chat & Learn)</option>
+<option value="silent">Silent (Learn Only)</option>
+<option value="off">Off (Respond Only)</option>
+</select>
+</div>
+</div>
+
+<!-- Row 3: Action Utilities -->
+<div class="row" style="justify-content: flex-end; border-top: 1px dashed var(--border-color); padding-top: 8px;">
 <button id="toggle-explorer-btn" class="util-btn" style="background: rgba(255,255,255,0.05);">🔍 View Brain</button>
 <button id="download-btn" class="util-btn">💾 Export Brain</button>
 </div>
@@ -357,7 +369,7 @@ background: none;
 </div>
 
 <div id="chat-box">
-<div class="msg meebo-msg">Welcome to Meebo Chat! Tap the ⚙️ icon in the corner to change my colors or skin themes anytime!</div>
+<div class="msg meebo-msg">Welcome back to Meebo Chat! Use the "Learn Profile" selector to swap between Adaptive conversation matching, pure text input ingestion, or offline locked execution profiles.</div>
 </div>
 
 <div id="input-area">
@@ -386,22 +398,10 @@ background: none;
 
 <div class="theme-section" id="custom-color-controls" style="border-top: 1px dashed var(--border-color); padding-top:12px;">
 <h4>Custom Elements:</h4>
-<div class="color-row">
-<span>Background Base</span>
-<input type="color" id="color-bg-main" value="#1a1a24">
-</div>
-<div class="color-row">
-<span>Panel Cards</span>
-<input type="color" id="color-bg-panel" value="#242432">
-</div>
-<div class="color-row">
-<span>Accent Tone</span>
-<input type="color" id="color-accent" value="#0ebd84">
-</div>
-<div class="color-row">
-<span>Meebo Bubble</span>
-<input type="color" id="color-bubble" value="#333344">
-</div>
+<div class="color-row"><span>Background Base</span><input type="color" id="color-bg-main" value="#1a1a24"></div>
+<div class="color-row"><span>Panel Cards</span><input type="color" id="color-bg-panel" value="#242432"></div>
+<div class="color-row"><span>Accent Tone</span><input type="color" id="color-accent" value="#0ebd84"></div>
+<div class="color-row"><span>Meebo Bubble</span><input type="color" id="color-bubble" value="#333344"></div>
 </div>
 </div>
 </div>
@@ -409,5 +409,4 @@ background: none;
 <script src="meebo.js"></script>
 </body>
 </html>
-
 

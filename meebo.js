@@ -7,12 +7,12 @@ const vocabCount = document.getElementById('vocab-count');
 const modeSelect = document.getElementById('mode-select');
 const brainSelect = document.getElementById('brain-select');
 const brainUpload = document.getElementById('brain-upload');
+const learnSelect = document.getElementById('learn-select');
 const explorerContainer = document.getElementById('brain-explorer-container');
 const toggleExplorerBtn = document.getElementById('toggle-explorer-btn');
 const renameBrainBtn = document.getElementById('rename-brain-btn');
 const deleteBrainBtn = document.getElementById('delete-brain-btn');
 
-// Themes variables DOM anchors
 const settingsModal = document.getElementById('settings-modal');
 const openSettingsBtn = document.getElementById('open-settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
@@ -28,7 +28,6 @@ let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
 
-// 📊 PALETTE PRESET DATA DEFINITIONS MATRIX
 const themesMap = {
 emerald: { main: "#1a1a24", panel: "#242432", border: "#2e2e3f", accent: "#0ebd84", hover: "#0cb37d", bubble: "#333344", txt: "#f1f1f1" },
 cyberpunk: { main: "#0d0d13", panel: "#161622", border: "#ff0055", accent: "#00f0ff", hover: "#00b8c7", bubble: "#25142f", txt: "#00f0ff" },
@@ -48,13 +47,8 @@ document.documentElement.style.setProperty('--bubble-text', t.txt || "#ffffff");
 
 function saveCustomColors() {
 const customObj = {
-main: colorBgMain.value,
-panel: colorBgPanel.value,
-border: adjustBrightness(colorBgPanel.value, 15),
-accent: colorAccent.value,
-hover: adjustBrightness(colorAccent.value, -15),
-bubble: colorBubble.value,
-txt: "#ffffff"
+main: colorBgMain.value, panel: colorBgPanel.value, border: adjustBrightness(colorBgPanel.value, 15),
+accent: colorAccent.value, hover: adjustBrightness(colorAccent.value, -15), bubble: colorBubble.value, txt: "#ffffff"
 };
 localStorage.setItem('meebo_theme_custom_obj', JSON.stringify(customObj));
 if (themePresetsSelect.value === "custom") applyThemeObject(customObj);
@@ -71,25 +65,17 @@ const bHex = (B.toString(16).length==1)?"0"+B.toString(16):B.toString(16);
 return `#${rHex}${gHex}${bHex}`;
 }
 
-// Watch Theme selections configuration adjustments
 themePresetsSelect.addEventListener('change', (e) => {
 const val = e.target.value;
 localStorage.setItem('meebo_theme_preset_selection', val);
 if (val === "custom") {
-customColorControls.style.opacity = "1";
-customColorControls.style.pointerEvents = "auto";
-saveCustomColors();
+customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto"; saveCustomColors();
 } else {
-customColorControls.style.opacity = "0.4";
-customColorControls.style.pointerEvents = "none";
-applyThemeObject(themesMap[val]);
+customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; applyThemeObject(themesMap[val]);
 }
 });
 
-[colorBgMain, colorBgPanel, colorAccent, colorBubble].forEach(input => {
-input.addEventListener('input', saveCustomColors);
-});
-
+[colorBgMain, colorBgPanel, colorAccent, colorBubble].forEach(input => { input.addEventListener('input', saveCustomColors); });
 openSettingsBtn.addEventListener('click', () => settingsModal.style.display = "flex");
 closeSettingsBtn.addEventListener('click', () => settingsModal.style.display = "none");
 window.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.style.display = "none"; });
@@ -97,19 +83,15 @@ window.addEventListener('click', (e) => { if(e.target === settingsModal) setting
 function loadSavedThemeSettings() {
 const savedPreset = localStorage.getItem('meebo_theme_preset_selection') || "emerald";
 themePresetsSelect.value = savedPreset;
-
 const savedCustom = localStorage.getItem('meebo_theme_custom_obj');
 if (savedCustom) {
 const c = JSON.parse(savedCustom);
 colorBgMain.value = c.main; colorBgPanel.value = c.panel; colorAccent.value = c.accent; colorBubble.value = c.bubble;
 }
-
 if (savedPreset === "custom" && savedCustom) {
-customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto";
-applyThemeObject(JSON.parse(savedCustom));
+customColorControls.style.opacity = "1"; customColorControls.style.pointerEvents = "auto"; applyThemeObject(JSON.parse(savedCustom));
 } else {
-customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none";
-applyThemeObject(themesMap[savedPreset] || themesMap.emerald);
+customColorControls.style.opacity = "0.4"; customColorControls.style.pointerEvents = "none"; applyThemeObject(themesMap[savedPreset] || themesMap.emerald);
 }
 }
 
@@ -126,21 +108,13 @@ explorerContainer.innerHTML = `<div style="color: #8a8a9e; margin-bottom: 8px; f
 keys.forEach(key => {
 const nodeDiv = document.createElement('div'); nodeDiv.className = 'brain-node';
 const keySpan = document.createElement('span'); keySpan.className = 'brain-key';
-const formattedKey = key.includes('_') ? `"${key.replace('_', ' ')}"` : `"${key}"`;
+const formattedKey = key.includes('__') ? `"${key.replace(/__/g, ' ')}"` : `"${key}"`;
 keySpan.innerText = `${formattedKey}: `;
 const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-values'; valuesDiv.innerText = JSON.stringify(targetData[key]);
 keySpan.addEventListener('click', () => nodeDiv.classList.toggle('expanded'));
 nodeDiv.appendChild(keySpan); nodeDiv.appendChild(valuesDiv); explorerContainer.appendChild(nodeDiv);
 });
 }
-
-toggleExplorerBtn.addEventListener('click', () => {
-if (explorerContainer.style.display === "block") {
-explorerContainer.style.display = "none"; toggleExplorerBtn.style.borderColor = "var(--border-color)";
-} else {
-renderBrainExplorer(); explorerContainer.style.display = "block"; toggleExplorerBtn.style.borderColor = "var(--accent-color)";
-}
-});
 
 function loadIndex() {
 const index = localStorage.getItem('meebo_index_list');
@@ -162,7 +136,7 @@ renameBrainBtn.addEventListener('click', () => {
 if (activeBrainId === "default") { alert("The baseline 'Default Brain' cannot be renamed."); return; }
 const newName = prompt(`Enter a new name for "${activeBrainId}":`, activeBrainId);
 if (!newName) return;
-const cleanName = newName.toLowerCase().replace(/[^a-z0-9]/g, "_").trim();
+const cleanName = newName.replace(/[^a-zA-Z0-9_\s]/g, "").trim().replace(/\s+/g, "_");
 if (!cleanName || brainIndexList.includes(cleanName)) return;
 localStorage.setItem(`meebo_profile_${cleanName}`, JSON.stringify(currentBrainData));
 localStorage.removeItem(`meebo_profile_${activeBrainId}`);
@@ -180,7 +154,7 @@ localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
 activeBrainId = "default"; rebuildBrainDropdown(); loadActiveBrain(); appendMessage("System", "Selected custom brain profile purged from device.", "system-msg");
 });
 
-// meebo.js - Part 2: Learning Matrix Arrays, Sentence Analytics & Memory Sync Loops
+// meebo.js - Part 2: Structural Cases, Learning Triggers & Conversation Flow Filters
 async function loadActiveBrain() {
 const savedData = localStorage.getItem(`meebo_profile_${activeBrainId}`);
 if (savedData) {
@@ -215,20 +189,27 @@ const msgDiv = document.createElement('div'); msgDiv.className = `msg ${classNam
 chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
+// 🧠 UPGRADED: Keeps Case, Comma and Punctuation spacing arrays intact!
 function learnFromSentence(text) {
 if (text.toLowerCase().trim() === "meebo wipe memory") return;
-const cleanText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
-const words = cleanText.split(/\s+/);
+
+// Split by spacing but keep case, punctuation, and markers intact
+const words = text.trim().split(/\s+/);
 if (words.length < 2) return;
 
+// Chaotic Mode Paths (Use clean lower casing ONLY for lookup key indices)
 for (let i = 0; i < words.length - 1; i++) {
-const currentWord = words[i]; const nextWord = words[i + 1];
+const currentWord = words[i].toLowerCase();
+const nextWord = words[i + 1]; // Preserves target capitalization
 if (!currentBrainData.chaotic[currentWord]) currentBrainData.chaotic[currentWord] = [];
 if (!currentBrainData.chaotic[currentWord].includes(nextWord)) currentBrainData.chaotic[currentWord].push(nextWord);
 }
+
+// Grammar Mode Paths
 if (words.length >= 3) {
 for (let i = 0; i < words.length - 2; i++) {
-const currentPair = `${words[i]}_${words[i+1]}`; const nextWord = words[i + 2];
+const currentPair = `${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`;
+const nextWord = words[i + 2]; // Preserves proper grammar endings
 if (!currentBrainData.grammar[currentPair]) currentBrainData.grammar[currentPair] = [];
 if (!currentBrainData.grammar[currentPair].includes(nextWord)) currentBrainData.grammar[currentPair].push(nextWord);
 }
@@ -238,19 +219,23 @@ if (explorerContainer.style.display === "block") renderBrainExplorer();
 }
 
 function generateChaoticReply(words) {
-let currentWord = words[Math.floor(Math.random() * words.length)];
+let currentWord = words[Math.floor(Math.random() * words.length)].toLowerCase();
 if (!currentBrainData.chaotic[currentWord]) {
 const keys = Object.keys(currentBrainData.chaotic);
-if (keys.length === 0) return "Active profile's chaotic layout is empty...";
+if (keys.length === 0) return "Active profile's memory paths are empty...";
 currentWord = keys[Math.floor(Math.random() * keys.length)];
 }
 let sentence = [currentWord];
-for (let i = 0; i < 10; i++) {
-const possibilities = currentBrainData.chaotic[currentWord];
+let wordPointer = currentWord;
+for (let i = 0; i < 12; i++) {
+const possibilities = currentBrainData.chaotic[wordPointer];
 if (!possibilities || possibilities.length === 0) break;
 const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
-sentence.push(nextWord); currentWord = nextWord;
+sentence.push(nextWord);
+wordPointer = nextWord.toLowerCase();
 }
+// Capitalize the first word of the output phrase beautifully
+sentence[0] = sentence[0].charAt(0).toUpperCase() + sentence[0].slice(1);
 return sentence.join(" ");
 }
 
@@ -258,23 +243,30 @@ function generateGrammarReply(words) {
 let key1 = "", key2 = "";
 if (words.length >= 2) {
 for (let i = 0; i < words.length - 1; i++) {
-if (currentBrainData.grammar[`${words[i]}_${words[i+1]}`]) {
-key1 = words[i]; key2 = words[i+1]; break;
+if (currentBrainData.grammar[`${words[i].toLowerCase()}__${words[i+1].toLowerCase()}`]) {
+key1 = words[i].toLowerCase(); key2 = words[i+1].toLowerCase();
+break;
 }
 }
 }
 const keys = Object.keys(currentBrainData.grammar);
-if (keys.length === 0) return "Active profile needs 3+ word sentences to trigger structural metrics.";
+if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
+
 if (!key1 || !key2) {
-const randomKey = keys[Math.floor(Math.random() * keys.length)]; [key1, key2] = randomKey.split('_');
+const randomKey = keys[Math.floor(Math.random() * keys.length)];
+[key1, key2] = randomKey.split('__');
 }
+
 let sentence = [key1, key2];
-for (let i = 0; i < 12; i++) {
-const currentPair = `${key1}_${key2}`; const possibilities = currentBrainData.grammar[currentPair];
+for (let i = 0; i < 14; i++) {
+const currentPair = `${key1}__${key2}`;
+const possibilities = currentBrainData.grammar[currentPair];
 if (!possibilities || possibilities.length === 0) break;
 const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)];
-sentence.push(nextWord); key1 = key2; key2 = nextWord;
+sentence.push(nextWord);
+key1 = key2; key2 = nextWord.toLowerCase();
 }
+sentence[0] = sentence[0].charAt(0).toUpperCase() + sentence[0].slice(1);
 return sentence.join(" ");
 }
 
@@ -288,13 +280,27 @@ function handleSend() {
 const text = userInput.value.trim(); if (!text) return;
 appendMessage("You", text, "user-msg"); userInput.value = "";
 if (text.toLowerCase() === "meebo wipe memory") { handleWipe(); return; }
+
+const strategy = learnSelect.value;
+
+// 🎛️ PROCESS STRATEGY SELECTION
+if (strategy === "adaptive" || strategy === "silent") {
 learnFromSentence(text);
-const isAskingQuestion = text.endsWith("?"); const mentionedName = text.toLowerCase().includes("meebo");
-if (isAskingQuestion || mentionedName) {
+}
+
+if (strategy === "silent") {
+// Silent profile means learning occurs, but response tracking is muted
+return;
+}
+
+const isAskingQuestion = text.endsWith("?");
+const mentionedName = text.toLowerCase().includes("meebo");
+
+if (isAskingQuestion || mentionedName || strategy === "adaptive") {
 setTimeout(() => {
-const cleanText = text.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").trim();
-const words = cleanText.split(/\s+/);
-const reply = modeSelect.value === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
+const words = text.trim().split(/\s+/);
+const selectedMode = modeSelect.value;
+const reply = selectedMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
 appendMessage("Meebo", reply, "meebo-msg");
 }, 500);
 }
@@ -309,14 +315,12 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 
 brainUpload.addEventListener('change', (event) => {
 const files = event.target.files; if (!files || files.length === 0) return;
-const file = files; const reader = new FileReader();
+const file = files[0]; const reader = new FileReader();
 reader.onload = function(e) {
 try {
 const uploadedJson = JSON.parse(e.target.result);
 const profileName = file.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
-if (!brainIndexList.includes(profileName)) {
-brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
-}
+if (!brainIndexList.includes(profileName)) { brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); }
 localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson));
 activeBrainId = profileName; rebuildBrainDropdown(); loadActiveBrain();
 appendMessage("System", `Successfully loaded and activated uploaded brain: "${file.name}"`, "system-msg");
@@ -338,7 +342,6 @@ downloadAnchor.click(); downloadAnchor.remove();
 sendBtn.addEventListener('click', handleSend);
 userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
 
-loadIndex();
-loadSavedThemeSettings();
-loadActiveBrain();
+loadIndex(); loadSavedThemeSettings(); loadActiveBrain();
+
 
