@@ -1,4 +1,4 @@
-// meebo.js - Part 1: Brain Database & Visual Explorer Panel
+// meebo.js - Part 1: Brain Profiles, Registry, Rename & Delete Mechanics
 const chatBox = document.getElementById('chat-box');
 const userInput = document.getElementById('user-input');
 const sendBtn = document.getElementById('send-btn');
@@ -9,6 +9,8 @@ const brainSelect = document.getElementById('brain-select');
 const brainUpload = document.getElementById('brain-upload');
 const explorerContainer = document.getElementById('brain-explorer-container');
 const toggleExplorerBtn = document.getElementById('toggle-explorer-btn');
+const renameBrainBtn = document.getElementById('rename-brain-btn');
+const deleteBrainBtn = document.getElementById('delete-brain-btn');
 
 let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
@@ -50,7 +52,6 @@ explorerContainer.appendChild(nodeDiv);
 });
 }
 
-// Explorer toggle window visibility click event
 toggleExplorerBtn.addEventListener('click', () => {
 if (explorerContainer.style.display === "block") {
 explorerContainer.style.display = "none";
@@ -81,7 +82,62 @@ brainSelect.appendChild(option);
 });
 }
 
-// meebo.js - Part 2: Chat Input & Response Generators
+// ✏️ PROFILE RENAME HANDLER
+renameBrainBtn.addEventListener('click', () => {
+if (activeBrainId === "default") {
+alert("The baseline 'Default Brain' cannot be renamed.");
+return;
+}
+
+const newName = prompt(`Enter a new name for "${activeBrainId}":`, activeBrainId);
+if (!newName) return;
+
+const cleanName = newName.toLowerCase().replace(/[^a-z0-9]/g, "_").trim();
+if (!cleanName) return;
+
+if (brainIndexList.includes(cleanName)) {
+alert("A brain profile with that identifier name already exists.");
+return;
+}
+
+// Copy data to new registry slot, clear old track slot
+localStorage.setItem(`meebo_profile_${cleanName}`, JSON.stringify(currentBrainData));
+localStorage.removeItem(`meebo_profile_${activeBrainId}`);
+
+// Update structural index pointer arrays
+brainIndexList = brainIndexList.map(id => id === activeBrainId ? cleanName : id);
+localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
+
+activeBrainId = cleanName;
+rebuildBrainDropdown();
+appendMessage("System", `Profile renamed to: "${cleanName}"`, "system-msg");
+});
+
+// ❌ PROFILE DELETE HANDLER
+deleteBrainBtn.addEventListener('click', () => {
+if (activeBrainId === "default") {
+alert("The core 'Default Brain' cannot be deleted.");
+return;
+}
+
+const confirmDelete = confirm(`Are you sure you want to permanently delete the profile: "${activeBrainId}"?`);
+if (!confirmDelete) return;
+
+// Purge entry storage profiles
+localStorage.removeItem(`meebo_profile_${activeBrainId}`);
+
+// Filter out deleted indices
+brainIndexList = brainIndexList.filter(id => id !== activeBrainId);
+localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
+
+// Reset selection defaults back to main index track
+activeBrainId = "default";
+rebuildBrainDropdown();
+loadActiveBrain();
+appendMessage("System", "Selected custom brain profile purged from device.", "system-msg");
+});
+
+// meebo.js - Part 2: Learning Loop Arrays & Text Conversions
 async function loadActiveBrain() {
 const savedData = localStorage.getItem(`meebo_profile_${activeBrainId}`);
 
@@ -304,5 +360,3 @@ userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSen
 
 loadIndex();
 loadActiveBrain();
-
-
