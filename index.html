@@ -224,6 +224,12 @@ display: flex;
 gap: 10px;
 width: 100%;
 }
+/* 📌 Floating Wrapper Framework for Text Overlay Visualizations */
+.input-wrapper {
+position: relative;
+flex: 1;
+display: flex;
+}
 input[type=text] {
 flex: 1;
 padding: 12px 16px;
@@ -233,9 +239,22 @@ background: var(--bg-panel);
 color: #fff;
 font-size: 0.95rem;
 outline: none;
+position: relative;
+z-index: 1;
 }
 input[type=text]:focus {
 border-color: var(--accent-color);
+}
+#visualizer-canvas {
+position: absolute;
+left: 2px;
+top: 2px;
+width: calc(100% - 4px);
+height: calc(100% - 4px);
+border-radius: 6px;
+pointer-events: none; /* Allows typing right through the waveform graphics */
+z-index: 2;
+display: none;
 }
 #mic-btn {
 padding: 0 16px;
@@ -381,7 +400,6 @@ background-color: var(--accent-color);
 </style>
 </head>
 <body>
-
 <div class="container">
 <div class="header-row">
 <h1>🤖 Meebo Chat</h1>
@@ -466,7 +484,10 @@ background-color: var(--accent-color);
 </div>
 
 <div id="input-area">
-<input type="text" id="user-input" placeholder="Type a message to Meebo..." autocomplete="off">
+<div class="input-wrapper">
+    <input type="text" id="user-input" placeholder="Type a message to Meebo..." autocomplete="off">
+    <canvas id="visualizer-canvas"></canvas>
+</div>
 <button id="mic-btn" title="Talk to Meebo">🎙️</button>
 <button id="send-btn">Send</button>
 </div>
@@ -503,3 +524,4 @@ background-color: var(--accent-color);
 <script src="meebo.js"></script>
 </body>
 </html>
+

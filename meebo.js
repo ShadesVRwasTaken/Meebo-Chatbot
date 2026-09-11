@@ -28,6 +28,17 @@ const colorBgPanel = document.getElementById('color-bg-panel');
 const colorAccent = document.getElementById('color-accent');
 const colorBubble = document.getElementById('color-bubble');
 
+// 📊 VISUALIZER OBJECT DECLARATIONS
+const canvas = document.getElementById('visualizer-canvas');
+const ctx = canvas.getContext('2d');
+let animationFrameId = null;
+let audioContext = null;
+let analyser = null;
+let micStream = null;
+let sourceNode = null;
+let isVisualizerActive = false;
+let syntheticWavePhase = 0; // Simulated physics oscillator loop for Meebo's TTS voice tracking
+
 let activeBrainId = "default";
 let currentBrainData = { chaotic: {}, grammar: {} };
 let brainIndexList = ["default"];
@@ -315,6 +326,71 @@ function generateGrammarReply(words) {
     return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
+// 🎨 HIGH-PERFORMANCE AUDIO WAVE RENDERER PIPELINE
+function startAudioVisualizer(type, calculatedTone = "neutral") {
+    isVisualizerActive = true;
+    canvas.style.display = "block";
+    
+    // Scale canvas buffer directly to match input bar box bounding sizes
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    // Grab active color theme values dynamically from CSS configurations
+    const waveColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || "#0ebd84";
+
+    function drawLoop() {
+        if (!isVisualizerActive) return;
+        animationFrameId = requestAnimationFrame(drawLoop);
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = waveColor;
+        ctx.beginPath();
+        
+        const width = canvas.width;
+        const height = canvas.height;
+        const midY = height / 2;
+
+        if (type === "mic" && analyser) {
+            // 🎙️ MICROPHONE MODE: Map real-time audio sample values onto the screen
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteTimeDomainData(dataArray);
+            const sliceWidth = width / dataArray.length;
+            let x = 0;
+            
+            for (let i = 0; i < dataArray.length; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = v * midY;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                x += sliceWidth;
+            }
+        } else if (type === "tts") {
+            // 🤖 MEEBO TALKING MODE: Simulated oscillation curves scaled by emotional speed/frequency variables
+            let amplitude = 8;
+            let frequency = 0.08;
+            
+            if (calculatedTone === "angry") { amplitude = 14; frequency = 0.18; }
+            else if (calculatedTone === "kind") { amplitude = 4; frequency = 0.04; }
+
+            syntheticWavePhase += frequency;
+            
+            for (let x = 0; x < width; x++) {
+                const y = midY + Math.sin(x * 0.05 + syntheticWavePhase) * Math.cos(x * 0.01 + syntheticWavePhase) * amplitude;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+        }
+        ctx.stroke();
+    }
+    drawLoop();
+}
+
+function stopAudioVisualizer() {
+    isVisualizerActive = false;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.style.display = "none";
+}
+
 function analyzeInputTone(text) {
     const LowerText = text.toLowerCase();
     const kindWords = ["love", "happy", "nice", "good", "great", "cool", "friend", "best", "thank", "awesome", "please", "sweet", "calm", "slow"];
@@ -359,9 +435,19 @@ function speakMeeboText(textToSpeak, calculatedTone) {
         }
         
         utterance.rate = chosenRate; utterance.pitch = chosenPitch;
-        utterance.onstart = () => { isMeeboSpeaking = true; };
-        utterance.onend = () => { isMeeboSpeaking = false; };
-        utterance.onerror = () => { isMeeboSpeaking = false; };
+        
+        utterance.onstart = () => { 
+            isMeeboSpeaking = true; 
+            startAudioVisualizer("tts", calculatedTone); // ⚡ Activate Meebo speaking wave
+        };
+        utterance.onend = () => { 
+            isMeeboSpeaking = false; 
+            stopAudioVisualizer(); // 🛑 Erase waveform graphic
+        };
+        utterance.onerror = () => { 
+            isMeeboSpeaking = false; 
+            stopAudioVisualizer();
+        };
         window.speechSynthesis.speak(utterance);
     }
 }
@@ -412,24 +498,38 @@ vocabCount.innerText = `${Object.keys(target).length} (${mode})`;
 }
 
 if (recognition) {
-    micBtn.addEventListener('click', () => {
+    micBtn.addEventListener('click', async () => {
         if (isMeeboSpeaking) return;
         if (micBtn.classList.contains('listening')) {
             recognition.stop();
         } else {
             window.speechSynthesis.cancel(); isMeeboSpeaking = false;
+            
+            // 🎙️ MIC INPUT HARDWARE VISUALIZATION ATTACHMENT
+            try {
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                sourceNode = audioContext.createMediaStreamSource(micStream);
+                sourceNode.connect(analyser);
+                
+                startAudioVisualizer("mic"); // ⚡ Kickstart real microphone graph draw
+            } catch(e) { console.warn("Audio element hook restriction blocked visualizer node mapping.", e); }
+
             setTimeout(() => {
                 userInput.value = ""; userInput.placeholder = "Listening to your voice...";
                 micBtn.classList.add('listening'); micBtn.innerText = "🛑";
                 try { recognition.start(); } catch(err) {
                     micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
+                    stopAudioVisualizer();
                 }
             }, 100);
         }
     });
 
     recognition.onresult = (event) => {
-        let transcript = event.results[0][0].transcript;
+        let transcript = event.results[transcript || 0].transcript || event.results.transcript;
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
     };
@@ -438,11 +538,17 @@ if (recognition) {
     recognition.onend = () => {
         micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
         userInput.placeholder = "Type a message to Meebo...";
+        
+        stopAudioVisualizer(); // 🛑 Shut down hardware mic feed graphics cleanly
+        if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
+        
         if (userInput.value.trim() !== "") handleSend();
     };
     recognition.onerror = () => {
         micBtn.classList.remove('listening'); micBtn.innerText = "🎙️";
         userInput.placeholder = "Type a message to Meebo...";
+        stopAudioVisualizer();
+        if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
     };
 } else {
     micBtn.style.opacity = "0.4";
@@ -458,7 +564,7 @@ if ('speechSynthesis' in window) {
 
 brainUpload.addEventListener('change', (event) => {
 const files = event.target.files; if (!files || files.length === 0) return;
-const file = files[0]; const reader = new FileReader();
+const file = files; const reader = new FileReader();
 reader.onload = function(e) {
 try {
     const uploadedJson = JSON.parse(e.target.result);
