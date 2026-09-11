@@ -482,9 +482,18 @@ if (recognition) {
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         userInput.value = transcript;
         
-        // ⚡ FIXED: Trigger handleSend immediately when text lands so it never gets skipped
+        // 🔒 CORE BUG FIX ENGINE: Force visualizer off and dismantle microphone stream tracks IMMEDIATELY
+        stopAudioVisualizer();
+        if (micStream) {
+            micStream.getTracks().forEach(track => {
+                track.stop(); // ⚡ Kills hardware latch to unblock Chrome text compilation buffer
+            });
+            micStream = null;
+        }
+        
+        // Fire message directly into memory pipeline hooks
         if (userInput.value.trim() !== "") {
-            setTimeout(() => { handleSend(); }, 150);
+            setTimeout(() => { handleSend(); }, 200);
         }
     };
     
@@ -492,7 +501,8 @@ if (recognition) {
     
     recognition.onend = () => {
         micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo...";
-        stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
+        stopAudioVisualizer();
+        if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
     };
     
     recognition.onerror = () => { micBtn.classList.remove('listening'); micBtn.innerText = "🎙️"; userInput.placeholder = "Type a message to Meebo..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
@@ -522,10 +532,10 @@ try {
 brainSelect.addEventListener('change', (e) => { activeBrainId = e.target.value; loadActiveBrain(); });
 modeSelect.addEventListener('change', () => { updateInterfaceCount(); if (explorerContainer.style.display === "block") renderBrainExplorer(); });
 downloadBtn.addEventListener('click', () => {
-const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentBrainData, null, 2));
-const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr);
-downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(dataStr);
-downloadAnchor.click(); downloadAnchor.remove();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentBrainData, null, 2));
+    const downloadAnchor = document.createElement('a'); downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `${activeBrainId}_brain.json`); document.body.appendChild(downloadAnchor);
+    downloadAnchor.click(); downloadAnchor.remove();
 });
 
 sendBtn.addEventListener('click', handleSend);
