@@ -204,6 +204,7 @@ function saveActiveBrain() {
         rebuildBrainDropdown();
     }
 }
+
 // meebo.js - Part 6: Text Ingestion Matrix & Reply Generation Engines
 function learnFromSentence(text) {
     if (text.toLowerCase().trim() === "meebo wipe memory") return;
@@ -239,7 +240,7 @@ function generateChaoticReply(words) {
     }
     let sentence = [currentWord]; let wordPointer = currentWord;
     
-    // Scale standard loop cap configuration up 10x if switch node resolves true
+    // Scale loop caps up 10x if long switch resolves true
     const loopLimit = longToggle && longToggle.checked ? 120 : 12;
     
     for (let i = 0; i < loopLimit; i++) {
@@ -274,7 +275,7 @@ function generateGrammarReply(words) {
     if (!key1 || !key2) { const randomKey = keys[Math.floor(Math.random() * keys.length)]; [key1, key2] = randomKey.split('__'); }
     let sentence = [key1, key2];
     
-    // Scale standard loop cap configuration up 10x if switch node resolves true
+    // Scale loop caps up 10x if long switch resolves true
     const loopLimit = longToggle && longToggle.checked ? 140 : 14;
 
     for (let i = 0; i < loopLimit; i++) {
