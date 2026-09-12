@@ -16,22 +16,19 @@ const explorerContainer = document.getElementById('brain-explorer-container');
 const toggleExplorerBtn = document.getElementById('toggle-explorer-btn');
 const renameBrainBtn = document.getElementById('rename-brain-btn');
 const deleteBrainBtn = document.getElementById('delete-brain-btn');
-
 const settingsModal = document.getElementById('settings-modal');
 const openSettingsBtn = document.getElementById('open-settings-btn');
 const closeSettingsBtn = document.getElementById('close-settings-btn');
 const themePresetsSelect = document.getElementById('theme-presets-select');
 const customColorControls = document.getElementById('custom-color-controls');
-
 const colorBgMain = document.getElementById('color-bg-main');
 const colorBgPanel = document.getElementById('color-bg-panel');
 const colorAccent = document.getElementById('color-accent');
 const colorBubble = document.getElementById('color-bubble');
-
 const expandSidebarBtn = document.getElementById('expand-sidebar-btn');
 const expandChatBtn = document.getElementById('expand-chat-btn');
+const globalExitBtn = document.getElementById('global-exit-btn');
 const emojiPanel = document.getElementById('emoji-panel');
-
 const canvas = document.getElementById('visualizer-canvas');
 const ctx = canvas.getContext('2d');
 
@@ -113,6 +110,12 @@ expandChatBtn.addEventListener('click', () => {
     document.body.classList.toggle('chat-fullscreen');
     document.body.classList.remove('sidebar-fullscreen');
     expandChatBtn.innerText = document.body.classList.contains('chat-fullscreen') ? "✕ Minimize" : "⛶ Full Terminal";
+    expandSidebarBtn.innerText = "⛶ Full Control";
+});
+
+globalExitBtn.addEventListener('click', () => {
+    document.body.classList.remove('sidebar-fullscreen', 'chat-fullscreen');
+    expandChatBtn.innerText = "⛶ Full Terminal";
     expandSidebarBtn.innerText = "⛶ Full Control";
 });
 
@@ -264,7 +267,6 @@ function generateChaoticReply(words) {
     let outStr = sentence.join(" "); return outStr.charAt(0).toUpperCase() + outStr.slice(1);
 }
 
-// Sentence reconstruction matrix engine rules
 function generateGrammarReply(words) {
     let key1 = "", key2 = ""; const cleanWords = words.map(w => w.toLowerCase());
     if (smartToggle.checked) {
@@ -332,6 +334,7 @@ function startAudioVisualizer(type, calculatedTone = "neutral") {
     drawLoop();
 }
 
+// Visual layout stream release handler hooks
 function stopAudioVisualizer() {
     isVisualizerActive = false; if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -355,13 +358,15 @@ function speakMeeboText(textToSpeak, calculatedTone) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(textToSpeak);
         const availableVoices = window.speechSynthesis.getVoices();
-        let targetVoice = availableVoices.find(v => v.name.includes("Chrome OS US English Male")) || availableVoices.find(v => v.name.includes("Google US English Male"));
+        let targetVoice = availableVoices.find(v => v.name.includes("Chrome OS US English Male")) || 
+                          availableVoices.find(v => v.name.includes("Google US English Male")) ||
+                          availableVoices.find(v => v.lang.startsWith("en"));
         if (targetVoice) utterance.voice = targetVoice;
         
-        let chosenRate = 0.82; let chosenPitch = 0.35;
+        let chosenRate = 0.85; let chosenPitch = 0.40;
         if (emotionToggle.checked) {
-            if (calculatedTone === "angry") { chosenRate = 1.25; chosenPitch = 0.15; }
-            else if (calculatedTone === "kind") { chosenRate = 0.75; chosenPitch = 0.55; }
+            if (calculatedTone === "angry") { chosenRate = 1.20; chosenPitch = 0.20; }
+            else if (calculatedTone === "kind") { chosenRate = 0.80; chosenPitch = 0.60; }
         }
         utterance.rate = chosenRate; utterance.pitch = chosenPitch;
         utterance.onstart = () => { isMeeboSpeaking = true; startAudioVisualizer("tts", calculatedTone); };
@@ -440,9 +445,10 @@ if (recognition) {
                 analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
                 sourceNode = audioContext.createMediaStreamSource(micStream); sourceNode.connect(analyser);
                 startAudioVisualizer("mic");
-            } catch(e) { console.error("Mic interface init failure", e); }
+            } catch(e) { console.error("ChromeOS peripheral access failure", e); }
             
-            userInput.value = ""; userInput.placeholder = "Listening to your voice stream...";
+            userInput.value = ""; 
+            userInput.placeholder = "Broadcasting voice packets...";
             micBtn.classList.add('listening');
             try { recognition.start(); } catch(err) { micBtn.classList.remove('listening'); stopAudioVisualizer(); }
         }
@@ -451,7 +457,9 @@ if (recognition) {
     recognition.onresult = (event) => {
         let transcript = event.results[event.results.length - 1].transcript;
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
+        
         userInput.value = transcript;
+        userInput.placeholder = "Type or click Mic to broadcast...";
         
         stopAudioVisualizer();
         if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
@@ -464,11 +472,15 @@ if (recognition) {
 
     recognition.onend = () => { 
         micBtn.classList.remove('listening'); 
-        userInput.placeholder = "Type a message to Meebo..."; 
+        userInput.placeholder = "Type or click Mic to broadcast..."; 
         stopAudioVisualizer(); 
         if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
     };
-    recognition.onerror = () => { recognition.stop(); };
+    
+    recognition.onerror = (e) => { 
+        console.error("Speech Recognition Engine Fault Code:", e.error);
+        recognition.stop(); 
+    };
 }
 
 brainUpload.addEventListener('change', (event) => {
@@ -481,7 +493,7 @@ brainUpload.addEventListener('change', (event) => {
             if (!brainIndexList.includes(profileName)) { brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); }
             localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson));
             activeBrainId = profileName; rebuildBrainDropdown(); loadActiveBrain();
-        } catch (err) { alert("Invalid brain data parameters inside file upload."); }
+        } catch (err) { alert("Invalid parameters inside file upload."); }
     }; reader.readAsText(targetFile);
 });
 
