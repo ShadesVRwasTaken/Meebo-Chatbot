@@ -43,8 +43,8 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognition = null;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
-    recognition.continuous = true;      // Prevent premature Chromebook cutoff pauses
-    recognition.interimResults = false;   // Process finalized cloud sentences only
+    recognition.continuous = true;      // Prevent ChromeOS from pausing mid-stream
+    recognition.interimResults = false;   // Process finalized cloud strings only
     recognition.lang = 'en-US';
 }
 
@@ -239,7 +239,10 @@ function generateChaoticReply(words) {
         }
     }
     let sentence = [currentWord]; let wordPointer = currentWord;
+    
+    // Scale loop configuration cap up 10x if long responses checkbox is ticked
     const loopLimit = longToggle && longToggle.checked ? 120 : 12;
+    
     for (let i = 0; i < loopLimit; i++) {
         const possibilities = currentBrainData.chaotic[wordPointer]; if (!possibilities || possibilities.length === 0) break;
         const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)]; sentence.push(nextWord); wordPointer = nextWord.toLowerCase();
@@ -271,7 +274,10 @@ function generateGrammarReply(words) {
     if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
     if (!key1 || !key2) { const randomKey = keys[Math.floor(Math.random() * keys.length)]; [key1, key2] = randomKey.split('__'); }
     let sentence = [key1, key2];
+    
+    // Scale loop configuration cap up 10x if long responses checkbox is ticked
     const loopLimit = longToggle && longToggle.checked ? 140 : 14;
+
     for (let i = 0; i < loopLimit; i++) {
         const currentPair = `${key1}__${key2}`; const possibilities = currentBrainData.grammar[currentPair];
         if (!possibilities || possibilities.length === 0) break;
@@ -316,6 +322,7 @@ function startAudioVisualizer(type, calculatedTone = "neutral") {
     drawLoop();
 }
 
+// Global visualizer cleanup tracker
 function stopAudioVisualizer() {
     isVisualizerActive = false; if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -403,6 +410,7 @@ emojisList.forEach(emoji => {
     btn.addEventListener('click', () => { userInput.value += emoji; userInput.focus(); }); if (emojiPanel) emojiPanel.appendChild(btn);
 });
 
+// CHROMEDOOK REACTION NODE INTERACTIVE DRAFT INGESTION
 if (recognition) {
     micBtn.addEventListener('click', async () => {
         if (isMeeboSpeaking) return;
@@ -412,25 +420,29 @@ if (recognition) {
                 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: true }); analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
                 sourceNode = audioContext.createMediaStreamSource(micStream); sourceNode.connect(analyser); startAudioVisualizer("mic");
-                userInput.value = ""; userInput.placeholder = "🟢 Chromebook Mic Capturing sound. Speak now..."; micBtn.classList.add('listening');
+                userInput.value = ""; userInput.placeholder = "🎙️ Listening... Speak your message clearly."; micBtn.classList.add('listening');
                 setTimeout(() => { try { recognition.start(); } catch(err) { micBtn.classList.remove('listening'); stopAudioVisualizer(); } }, 100);
-            } catch(e) { appendMessage("System", "🚨 Chromebook blocked mic. Click the lock icon in your URL bar and click Allow!", "system-msg"); }
+            } catch(e) { appendMessage("System", "🚨 Chromebook blocked mic. Check the lock icon in your URL bar and click Allow!", "system-msg"); }
         }
     });
     recognition.onresult = (event) => {
         let transcript = event.results[event.results.length - 1].transcript; transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
-        userInput.value = transcript; userInput.placeholder = "Type or activate mic node to broadcast..."; recognition.stop(); if (userInput.value.trim() !== "") handleSend();
+        
+        // Pushes to message field line for text review instead of firing instant submissions
+        userInput.value = transcript; 
+        userInput.placeholder = "Review draft transmission packets above..."; 
+        recognition.stop();
     };
     recognition.onerror = (e) => { 
-        if (e.error === 'not-allowed') appendMessage("System", "🚨 ChromeOS Permissions Blocked: Mic permission is disabled.", "system-msg");
-        else if (e.error === 'network') appendMessage("System", "🚨 Network Fault: Speech engine requires connection to Google servers.", "system-msg");
+        if (e.error === 'not-allowed') appendMessage("System", "🚨 Permission Error: Mic context block triggered.", "system-msg");
+        else if (e.error === 'network') appendMessage("System", "🚨 Server Network Error: ChromeOS connection dropped.", "system-msg");
         recognition.stop(); 
     };
-    recognition.onend = () => { micBtn.classList.remove('listening'); userInput.placeholder = "Type or activate mic node to broadcast..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
+    recognition.onend = () => { micBtn.classList.remove('listening'); if (userInput.value === "") userInput.placeholder = "Type or activate mic node to broadcast..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 }
 
 brainUpload.addEventListener('change', (event) => {
-    const files = event.target.files; if (!files || files.length === 0) return; const targetFile = files[0]; const reader = new FileReader();
+    const files = event.target.files; if (!files || files.length === 0) return; const targetFile = files; const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const uploadedJson = JSON.parse(e.target.result); const profileName = targetFile.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
