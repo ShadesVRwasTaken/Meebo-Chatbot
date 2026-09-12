@@ -46,7 +46,6 @@
         #chat-panel { flex: 1; min-width: 0; }
         #customizer-panel { width: 280px; transition: width 0.4s ease, transform 0.4s ease; }
         
-        /* Fullscreen Layout Overrides */
         body.sidebar-fullscreen #chat-panel, body.sidebar-fullscreen #customizer-panel { display: none !important; }
         body.sidebar-fullscreen #control-hud { width: 100%; }
         body.chat-fullscreen #control-hud, body.chat-fullscreen #customizer-panel { display: none !important; }
@@ -83,6 +82,13 @@
             transition: all 0.2s ease;
         }
         button:hover { background: var(--accent-color); color: #000; border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+
+        #chat-box { display: flex; flex-direction: column; gap: 12px; padding: 10px; }
+        .msg { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 13px; line-height: 1.4; word-wrap: break-word; display: inline-block; animation: bubblePop 0.2s ease-out; }
+        .user-msg { align-self: flex-end; background: var(--accent-color); color: #000000; font-weight: bold; border-bottom-right-radius: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
+        .meebo-msg { align-self: flex-start; background: var(--bubble-meebo); color: var(--bubble-text); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); }
+        .system-msg { align-self: center; background: rgba(255, 255, 255, 0.05); color: #8a8a9e; font-size: 11px; border-radius: 8px; padding: 4px 10px; border: 1px dashed var(--border-color); text-transform: uppercase; letter-spacing: 0.5px; }
+        @keyframes bubblePop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
@@ -131,7 +137,6 @@
                 <label class="control-item"><input type="checkbox" id="emotion-toggle"> <span>Emotion Engine Vector</span></label>
                 <label class="control-item"><input type="checkbox" id="smart-toggle" checked> <span>Smart Context Anchor</span></label>
                 
-                <!-- New Node Segment seamlessly embedded into HUD hierarchy -->
                 <div style="border-top: 1px dashed var(--border-color); margin-top: 8px; padding-top: 6px;">
                     <label class="control-item" style="color: var(--accent-color); font-weight: bold;">
                         <input type="checkbox" id="long-toggle"> <span>Long Responses (10x Max)</span>
@@ -185,7 +190,7 @@
         </div>
     </div>
 
-    <!-- Hidden Settings Backdrop Modal Container Interface -->
+    <!-- System Settings Backdrop Modal Panel Window Overlay -->
     <div id="settings-modal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.75); display: none; z-index: 1000; backdrop-filter: blur(4px);">
         <div class="panel" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); max-width: 400px; width: 90%; background: #0d0d1a;">
             <h3>System Settings Panel</h3>
