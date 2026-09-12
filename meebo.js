@@ -239,10 +239,7 @@ function generateChaoticReply(words) {
         }
     }
     let sentence = [currentWord]; let wordPointer = currentWord;
-    
-    // Scale loop configuration cap up 10x if long responses checkbox is ticked
     const loopLimit = longToggle && longToggle.checked ? 120 : 12;
-    
     for (let i = 0; i < loopLimit; i++) {
         const possibilities = currentBrainData.chaotic[wordPointer]; if (!possibilities || possibilities.length === 0) break;
         const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)]; sentence.push(nextWord); wordPointer = nextWord.toLowerCase();
@@ -274,10 +271,7 @@ function generateGrammarReply(words) {
     if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
     if (!key1 || !key2) { const randomKey = keys[Math.floor(Math.random() * keys.length)]; [key1, key2] = randomKey.split('__'); }
     let sentence = [key1, key2];
-    
-    // Scale loop configuration cap up 10x if long responses checkbox is ticked
     const loopLimit = longToggle && longToggle.checked ? 140 : 14;
-
     for (let i = 0; i < loopLimit; i++) {
         const currentPair = `${key1}__${key2}`; const possibilities = currentBrainData.grammar[currentPair];
         if (!possibilities || possibilities.length === 0) break;
@@ -322,7 +316,6 @@ function startAudioVisualizer(type, calculatedTone = "neutral") {
     drawLoop();
 }
 
-// Global visualizer cleanup tracker
 function stopAudioVisualizer() {
     isVisualizerActive = false; if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -410,7 +403,6 @@ emojisList.forEach(emoji => {
     btn.addEventListener('click', () => { userInput.value += emoji; userInput.focus(); }); if (emojiPanel) emojiPanel.appendChild(btn);
 });
 
-// CHROMEDOOK REACTION NODE INTERACTIVE DRAFT INGESTION
 if (recognition) {
     micBtn.addEventListener('click', async () => {
         if (isMeeboSpeaking) return;
@@ -427,15 +419,13 @@ if (recognition) {
     });
     recognition.onresult = (event) => {
         let transcript = event.results[event.results.length - 1].transcript; transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
-        
-        // Pushes to message field line for text review instead of firing instant submissions
         userInput.value = transcript; 
         userInput.placeholder = "Review draft transmission packets above..."; 
         recognition.stop();
     };
     recognition.onerror = (e) => { 
         if (e.error === 'not-allowed') appendMessage("System", "🚨 Permission Error: Mic context block triggered.", "system-msg");
-        else if (e.error === 'network') appendMessage("System", "🚨 Server Network Error: ChromeOS connection dropped.", "system-msg");
+        else if (e.error === 'network') appendMessage("System", "🚨 Server Network Error: ChromeOS connection to cloud translation dropped.", "system-msg");
         recognition.stop(); 
     };
     recognition.onend = () => { micBtn.classList.remove('listening'); if (userInput.value === "") userInput.placeholder = "Type or activate mic node to broadcast..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
