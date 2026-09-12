@@ -47,7 +47,7 @@ if (SpeechRecognition) {
 }
 
 const themesMap = {
-    emerald: { main: "#0b0b10", panel: "rgba(30,30,45,0.4)", border: "rgba(255,255,255,0.08)", accent: "#0ebd84", hover: "#0cb37d", bubble: "#1e1e2d", txt: "#f1f1f1" },
+    emerald: { main: "#06060c", panel: "rgba(13,13,25,0.7)", border: "rgba(255,255,255,0.05)", accent: "#0ebd84", hover: "#0cb37d", bubble: "rgba(22,22,38,0.8)", txt: "#f1f1f1" },
     cyberpunk: { main: "#05050a", panel: "rgba(255,0,85,0.05)", border: "rgba(255,0,85,0.2)", accent: "#00f0ff", hover: "#00b8c7", bubble: "#1a0826", txt: "#00f0ff" },
     midnight: { main: "#06040d", panel: "rgba(155,93,229,0.06)", border: "rgba(155,93,229,0.2)", accent: "#9b5de5", hover: "#7b3fd3", bubble: "#150e26", txt: "#f3effa" },
     monochrome: { main: "#080808", panel: "rgba(255,255,255,0.03)", border: "rgba(255,255,255,0.08)", accent: "#e0e0e0", hover: "#b5b5b5", bubble: "#161616", txt: "#ffffff" }
@@ -161,7 +161,7 @@ renameBrainBtn.addEventListener('click', () => {
     localStorage.removeItem(`meebo_profile_${activeBrainId}`);
     brainIndexList = brainIndexList.map(id => id === activeBrainId ? cleanName : id);
     localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
-    activeBrainId = cleanName; rebuildBrainDropdown(); appendMessage("System", `Profile renamed to: "${cleanName}"`, "system-msg");
+    activeBrainId = cleanName; rebuildBrainDropdown(); loadActiveBrain();
 });
 
 deleteBrainBtn.addEventListener('click', () => {
@@ -170,7 +170,7 @@ deleteBrainBtn.addEventListener('click', () => {
     localStorage.removeItem(`meebo_profile_${activeBrainId}`);
     brainIndexList = brainIndexList.filter(id => id !== activeBrainId);
     localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList));
-    activeBrainId = "default"; rebuildBrainDropdown(); loadActiveBrain(); appendMessage("System", "Selected custom brain profile purged from device.", "system-msg");
+    activeBrainId = "default"; rebuildBrainDropdown(); loadActiveBrain();
 });
 
 async function loadActiveBrain() {
@@ -178,14 +178,12 @@ async function loadActiveBrain() {
     if (savedData) {
         const parsed = JSON.parse(savedData);
         currentBrainData.chaotic = parsed.chaotic || {}; currentBrainData.grammar = parsed.grammar || {};
-        appendMessage("System", `Loaded active profile [${activeBrainId}].`, "system-msg");
     } else if (activeBrainId === "default") {
         try {
             const response = await fetch('brain.json');
             if (response.ok) {
                 const data = await response.json();
                 currentBrainData.chaotic = data.chaotic || {}; currentBrainData.grammar = data.grammar || {};
-                appendMessage("System", "Synced Default profile with repository endpoints.", "system-msg");
             }
         } catch (e) { currentBrainData = { chaotic: {}, grammar: {} }; }
     } else { currentBrainData = { chaotic: {}, grammar: {} }; }
@@ -334,7 +332,6 @@ function startAudioVisualizer(type, calculatedTone = "neutral") {
     drawLoop();
 }
 
-// Visual layout stream release handler hooks
 function stopAudioVisualizer() {
     isVisualizerActive = false; if (animationFrameId) cancelAnimationFrame(animationFrameId);
     if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -445,10 +442,10 @@ if (recognition) {
                 analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
                 sourceNode = audioContext.createMediaStreamSource(micStream); sourceNode.connect(analyser);
                 startAudioVisualizer("mic");
-            } catch(e) { console.error("ChromeOS peripheral access failure", e); }
+            } catch(e) { console.error("Mic access initialization error", e); }
             
             userInput.value = ""; 
-            userInput.placeholder = "Broadcasting voice packets...";
+            userInput.placeholder = "Streaming audio input packets...";
             micBtn.classList.add('listening');
             try { recognition.start(); } catch(err) { micBtn.classList.remove('listening'); stopAudioVisualizer(); }
         }
@@ -459,7 +456,7 @@ if (recognition) {
         transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
         
         userInput.value = transcript;
-        userInput.placeholder = "Type or click Mic to broadcast...";
+        userInput.placeholder = "Type or activate mic node to broadcast...";
         
         stopAudioVisualizer();
         if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
@@ -472,7 +469,7 @@ if (recognition) {
 
     recognition.onend = () => { 
         micBtn.classList.remove('listening'); 
-        userInput.placeholder = "Type or click Mic to broadcast..."; 
+        userInput.placeholder = "Type or activate mic node to broadcast..."; 
         stopAudioVisualizer(); 
         if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; }
     };
@@ -493,7 +490,7 @@ brainUpload.addEventListener('change', (event) => {
             if (!brainIndexList.includes(profileName)) { brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); }
             localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson));
             activeBrainId = profileName; rebuildBrainDropdown(); loadActiveBrain();
-        } catch (err) { alert("Invalid parameters inside file upload."); }
+        } catch (err) { alert("Invalid brain data parameters within selection file."); }
     }; reader.readAsText(targetFile);
 });
 

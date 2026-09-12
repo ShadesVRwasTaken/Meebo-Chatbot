@@ -3,41 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meebo Terminal v2.6</title>
+    <title>Meebo Terminal v3.0</title>
     <style>
         :root {
-            --bg-main: #0b0b10;
-            --bg-panel: rgba(28,28,40,0.65);
-            --border-color: rgba(255,255,255,0.08);
+            --bg-main: #06060c;
+            --bg-panel: rgba(13, 13, 25, 0.7);
+            --border-color: rgba(255, 255, 255, 0.05);
+            --accent-grad: linear-gradient(135deg, #0ebd84 0%, #00f0ff 100%);
             --accent-color: #0ebd84;
             --accent-hover: #0cb37d;
-            --bubble-meebo: #1e1e2d;
+            --bubble-meebo: rgba(22, 22, 38, 0.8);
             --bubble-text: #f1f1f1;
+            --panel-glow: 0 8px 32px 0 rgba(0, 240, 255, 0.03);
         }
         body { 
-            background: var(--bg-main); 
+            background: radial-gradient(circle at 50% 50%, #0d0d1e 0%, var(--bg-main) 100%); 
             color: #ffffff; 
             font-family: system-ui, -apple-system, sans-serif; 
             margin: 0; 
-            padding: 20px; 
+            padding: 24px; 
             display: flex; 
-            gap: 20px; 
+            gap: 24px; 
             min-height: 100vh;
             max-height: 100vh;
             box-sizing: border-box; 
             overflow: auto; 
         }
         .sidebar { 
-            width: 320px; 
+            width: 340px; 
             background: var(--bg-panel); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-color); 
-            padding: 20px; 
+            padding: 24px; 
             display: flex; 
             flex-direction: column; 
-            gap: 16px; 
-            border-radius: 12px; 
+            gap: 20px; 
+            border-radius: 16px; 
+            box-shadow: var(--panel-glow);
             box-sizing: border-box;
-            transition: all 0.25s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow-y: auto;
         }
         .chat-container { 
@@ -45,10 +50,13 @@
             display: flex; 
             flex-direction: column; 
             background: var(--bg-panel); 
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--border-color); 
-            border-radius: 12px; 
+            border-radius: 16px; 
+            box-shadow: var(--panel-glow);
             overflow: hidden;
-            transition: all 0.25s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
         }
         body.sidebar-fullscreen .chat-container { display: none; }
@@ -59,51 +67,55 @@
             position: fixed;
             top: 25px;
             right: 25px;
-            background: #ff3b30;
+            background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
             color: #fff;
-            font-weight: bold;
+            font-weight: 600;
             border: none;
             z-index: 9999;
-            box-shadow: 0 4px 15px rgba(255,59,48,0.3);
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.3);
+            letter-spacing: 0.5px;
         }
         body.sidebar-fullscreen .fullscreen-exit-trigger,
         body.chat-fullscreen .fullscreen-exit-trigger { display: inline-flex; }
         #chat-box { 
             flex: 1; 
-            padding: 20px; 
+            padding: 24px; 
             overflow-y: auto; 
             display: flex; 
             flex-direction: column; 
-            gap: 12px; 
+            gap: 16px; 
         }
         .msg { 
-            padding: 12px 16px; 
-            border-radius: 10px; 
-            max-width: 75%; 
+            padding: 14px 18px; 
+            border-radius: 14px; 
+            max-width: 70%; 
             width: fit-content; 
-            line-height: 1.4;
+            line-height: 1.5;
             word-break: break-word; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-        .user-msg { background: var(--accent-color); color: #050508; align-self: flex-end; font-weight: 500; }
-        .meebo-msg { background: var(--bubble-meebo); color: var(--bubble-text); align-self: flex-start; border: 1px solid var(--border-color); }
-        .system-msg { background: rgba(255,255,255,0.03); color: #8a8a9e; font-size: 0.85em; font-family: monospace; align-self: center; text-align: center; max-width: 90%; border: 1px solid var(--border-color); }
-        .input-area { padding: 16px; border-top: 1px solid var(--border-color); display: flex; gap: 12px; align-items: center; background: rgba(0,0,0,0.2); }
-        input[type="text"] { flex: 1; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 14px; color: #fff; border-radius: 8px; outline: none; font-size: 1em; }
-        input[type="text"]:focus { border-color: var(--accent-color); }
-        button, select { background: rgba(255,255,255,0.06); border: 1px solid var(--border-color); color: #fff; padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        button:hover { background: var(--accent-hover); color: #050508; }
-        #visualizer-canvas { width: 140px; height: 32px; background: rgba(0,0,0,0.15); border-radius: 6px; border: 1px solid var(--border-color); }
-        #brain-explorer-container { display: none; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 0.85em; margin-top: 10px; }
-        .brain-node { margin-bottom: 6px; padding-left: 8px; }
-        .brain-key { color: var(--accent-color); cursor: pointer; font-weight: bold; }
-        .brain-values { display: none; color: #a5a5b8; padding: 4px 0 4px 8px; border-left: 1px dashed var(--border-color); }
+        .user-msg { background: var(--accent-grad); color: #040408; align-self: flex-end; font-weight: 600; border-bottom-right-radius: 4px; }
+        .meebo-msg { background: var(--bubble-meebo); color: var(--bubble-text); align-self: flex-start; border: 1px solid rgba(255,255,255,0.03); border-bottom-left-radius: 4px; }
+        .system-msg { background: rgba(255,255,255,0.02); color: #8a8a9e; font-size: 0.85em; font-family: monospace; align-self: center; text-align: center; max-width: 85%; border: 1px solid var(--border-color); border-radius: 8px; }
+        .input-area { padding: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 14px; align-items: center; background: rgba(5, 5, 10, 0.4); }
+        input[type="text"] { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); padding: 14px 18px; color: #fff; border-radius: 12px; outline: none; font-size: 0.95em; transition: all 0.2s; }
+        input[type="text"]:focus { border-color: rgba(0, 240, 255, 0.4); box-shadow: 0 0 10px rgba(0, 240, 255, 0.1); }
+        button, select { background: rgba(255,255,255,0.04); border: 1px solid var(--border-color); color: #fff; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 500; transition: all 0.2s ease; }
+        button:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); transform: translateY(-1px); }
+        #visualizer-canvas { width: 160px; height: 36px; background: rgba(0,0,0,0.25); border-radius: 8px; border: 1px solid var(--border-color); }
+        #brain-explorer-container { display: none; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); padding: 14px; border-radius: 12px; max-height: 220px; overflow-y: auto; font-family: monospace; font-size: 0.85em; margin-top: 12px; }
+        .brain-node { margin-bottom: 8px; padding-left: 10px; }
+        .brain-key { color: #00f0ff; cursor: pointer; font-weight: 600; }
+        .brain-values { display: none; color: #a5a5b8; padding: 6px 0 6px 10px; border-left: 1px dashed rgba(255,255,255,0.1); margin-top: 4px; }
         .brain-node.expanded .brain-values { display: block; }
-        .emoji-panel { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; background: rgba(0,0,0,0.15); border-top: 1px solid var(--border-color); }
-        .emoji-btn { padding: 6px; background: none; border: none; font-size: 1.2em; cursor: pointer; border-radius: 4px; }
-        .switch-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9em; }
-        .switch-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--accent-color); }
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #111116; border: 1px solid var(--border-color); padding: 24px; border-radius: 12px; z-index: 100; min-width: 280px; }
-        .mic-btn.listening { background: #ff3b30 !important; color: #fff !important; box-shadow: 0 0 10px #ff3b30; }
+        .emoji-panel { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; background: rgba(5,5,10,0.2); border-top: 1px solid var(--border-color); }
+        .emoji-btn { padding: 6px; background: none; border: none; font-size: 1.25em; cursor: pointer; border-radius: 6px; transition: background 0.15s; }
+        .emoji-btn:hover { background: rgba(255,255,255,0.05); }
+        .switch-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01); padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 0.9em; color: #d1d1e0; }
+        .switch-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0ebd84; }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0b0b14; border: 1px solid var(--border-color); padding: 28px; border-radius: 16px; z-index: 100; min-width: 300px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        .mic-btn.listening { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%) !important; border: none !important; color: #fff !important; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.7; transform: scale(0.96); } 100% { opacity: 1; transform: scale(1); } }
     </style>
 </head>
 <body>
@@ -112,51 +124,53 @@
 
     <div class="sidebar">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-            <h3 style="margin:0; color:var(--accent-color); font-weight: 600;">Meebo Control</h3>
-            <span style="font-size:0.75em; opacity:0.5; font-family: monospace;">v2.6 OS</span>
+            <!-- ⚡ FIXED: Added standard background-clip declaration to resolve vendorPrefix diagnostic -->
+            <h3 style="margin:0; background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; letter-spacing: -0.5px;">Meebo Control</h3>
+            <span style="font-size:0.75em; opacity:0.4; font-family: monospace; letter-spacing: 1px;">v3.0 HUD</span>
         </div>
         
-        <div>
-            <label style="font-size:0.8em; opacity:0.6; display:block; margin-bottom:6px;">Active Cognitive Brain</label>
-            <select id="brain-select" style="width:100%;"></select>
-            <div style="display:flex; gap:6px; margin-top:6px;">
+        <div style="background: rgba(255,255,255,0.01); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.02);">
+            <label style="font-size:0.8em; opacity:0.5; display:block; margin-bottom:8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Active Cognitive Brain</label>
+            <select id="brain-select" style="width:100%; background: #0e0e18;"></select>
+            <div style="display:flex; gap:8px; margin-top:8px;">
                 <button id="rename-brain-btn" style="flex:1; font-size:0.8em;">✏️ Rename</button>
                 <button id="delete-brain-btn" style="flex:1; font-size:0.8em;">❌ Delete</button>
             </div>
             <input type="file" id="brain-upload" accept=".json" style="display:none;">
-            <button onclick="document.getElementById('brain-upload').click()" style="width:100%; margin-top:6px; font-size:0.85em; background: rgba(14, 189, 132, 0.1); border-color: rgba(14, 189, 132, 0.2); color: var(--accent-color);">📂 Import JSON Profile</button>
+            <button onclick="document.getElementById('brain-upload').click()" style="width:100%; margin-top:8px; font-size:0.85em; background: linear-gradient(135deg, rgba(14, 189, 132, 0.1) 0%, rgba(0, 240, 255, 0.1) 100%); border-color: rgba(14, 189, 132, 0.2); color: #00f0ff; font-weight: 600;">📂 Import JSON Profile</button>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
             <div>
-                <label style="font-size:0.8em; opacity:0.6; display:block; margin-bottom:4px;">Generation Rules</label>
-                <select id="mode-select" style="width:100%;">
+                <label style="font-size:0.8em; opacity:0.5; display:block; margin-bottom:6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Generation Rules</label>
+                <select id="mode-select" style="width:100%; background: #0e0e18;">
                     <option value="grammar">Grammar Engine (Proper)</option>
                     <option value="chaotic">Chaotic Matrix (Random)</option>
                 </select>
             </div>
 
             <div>
-                <label style="font-size:0.8em; opacity:0.6; display:block; margin-bottom:4px;">Ingestion Strategy</label>
-                <select id="learn-select" style="width:100%;">
+                <label style="font-size:0.8em; opacity:0.5; display:block; margin-bottom:6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Ingestion Strategy</label>
+                <select id="learn-select" style="width:100%; background: #0e0e18;">
                     <option value="adaptive">Adaptive Chat (Learn & Reply)</option>
                     <option value="silent">Silent Buffer (Learn Only)</option>
                     <option value="off">Deactivated Rules (Read Only)</option>
                 </select>
             </div>
-            <div style="font-size:0.8em; padding: 4px 6px; opacity:0.7; background: rgba(255,255,255,0.02); border-radius: 4px; display: inline-flex; justify-content: space-between;">
-                <span>Total Stored Memory Keys:</span>
-                <span id="vocab-count" style="color:var(--accent-color); font-weight:bold;">0</span>
+            <div style="font-size:0.85em; padding: 10px 14px; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.08); border-radius: 8px; display: inline-flex; justify-content: space-between; align-items: center;">
+                <span style="opacity: 0.7;">Stored Memory Keys:</span>
+                <!-- ⚡ FIXED: Added standard background-clip declaration to resolve vendorPrefix diagnostic -->
+                <span id="vocab-count" style="background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; font-weight:700;">0</span>
             </div>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+        <div style="display: flex; flex-direction: column; gap: 8px;">
             <div class="switch-row"><span>Audio Text-to-Speech</span><input type="checkbox" id="tts-toggle"></div>
             <div class="switch-row"><span>Emotion Engine Vector</span><input type="checkbox" id="emotion-toggle"></div>
             <div class="switch-row"><span>Smart Context Anchor</span><input type="checkbox" id="smart-toggle" checked></div>
         </div>
 
-        <div style="display:flex; gap:6px; margin-top:auto; padding-top: 10px; border-top: 1px solid var(--border-color);">
+        <div style="display:flex; gap:8px; margin-top:auto; padding-top: 14px; border-top: 1px solid var(--border-color);">
             <button id="toggle-explorer-btn" style="flex:1;">🔍 Explorer</button>
             <button id="download-btn" style="flex:1;">💾 Export</button>
             <button id="open-settings-btn" style="padding: 10px;">⚙️</button>
@@ -166,30 +180,33 @@
     </div>
 
     <div class="chat-container">
-        <div style="display:flex; background:rgba(0,0,0,0.2); padding:12px 16px; border-bottom:1px solid var(--border-color); align-items:center; justify-content:space-between; gap: 15px;">
-            <div style="display:flex; gap:6px;">
-                <button id="expand-sidebar-btn" style="padding:6px 10px; font-size:0.8em;">⛶ Full Control</button>
-                <button id="expand-chat-btn" style="padding:6px 10px; font-size:0.8em;">⛶ Full Terminal</button>
+        <div style="display:flex; background:rgba(0,0,0,0.15); padding:14px 20px; border-bottom:1px solid var(--border-color); align-items:center; justify-content:space-between; gap: 15px;">
+            <div style="display:flex; gap:8px;">
+                <button id="expand-sidebar-btn" style="padding:8px 12px; font-size:0.8em; border-radius: 8px;">⛶ Full Control</button>
+                <button id="expand-chat-btn" style="padding:8px 12px; font-size:0.8em; border-radius: 8px;">⛶ Full Terminal</button>
             </div>
             <canvas id="visualizer-canvas"></canvas>
         </div>
 
         <div id="chat-box">
-            <div class="msg system-msg">Meebo Core v2.6 Sync Completed. Voice pipeline channels optimized for Chromebook OS audio buffers.</div>
+            <div class="msg system-msg">System interface overhaul active. Fluid radial backgrounds mapped successfully. Chromebook audio pathways initialized.</div>
         </div>
 
+        <div id="emoji-panel" class="emoji-panel"></div>
+
         <div class="input-area">
-            <button id="mic-btn" class="mic-btn" type="button" style="font-size:1.2em; padding:10px 14px;">🎙️</button>
-            <input type="text" id="user-input" placeholder="Type or click Mic to broadcast..." autocomplete="off">
-            <button id="send-btn" style="background:var(--accent-color); color:#050508; font-weight:600; padding:12px 24px; border: none;">Send Packet</button>
+            <button id="mic-btn" class="mic-btn" type="button" style="font-size:1.25em; padding:12px 16px; border-radius: 12px;">🎙️</button>
+            <input type="text" id="user-input" placeholder="Type or activate mic node to broadcast..." autocomplete="off">
+            <button id="send-btn" style="background: var(--accent-grad); color:#040408; font-weight:700; padding:14px 28px; border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(14, 189, 132, 0.25);">Send Transmission</button>
         </div>
     </div>
 
     <div id="settings-modal" class="modal">
-        <h4 style="margin-top:0; color:var(--accent-color); margin-bottom: 12px;">Terminal Customizer</h4>
-        <label style="display:block; margin-bottom:12px; font-size: 0.85em; opacity: 0.8;">
+        <!-- ⚡ FIXED: Added standard background-clip declaration to resolve vendorPrefix diagnostic warning -->
+        <h4 style="margin-top:0; background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 16px; font-size: 1.15em; font-weight: 700;">Terminal Environment Customizer</h4>
+        <label style="display:block; margin-bottom:16px; font-size: 0.85em; opacity: 0.8;">
             Theme Preset Profile:
-            <select id="theme-presets-select" style="width:100%; margin-top:6px;">
+            <select id="theme-presets-select" style="width:100%; margin-top:6px; background: #141424;">
                 <option value="emerald">Emerald Core</option>
                 <option value="cyberpunk">Cyberpunk Neon</option>
                 <option value="midnight">Midnight Violet</option>
@@ -197,13 +214,13 @@
                 <option value="custom">User Generated Custom</option>
             </select>
         </label>
-        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:15px;">
-            <label style="display:flex; justify-content:space-between; font-size:0.8em;">Main Background <input type="color" id="color-bg-main" value="#0b0b10"></label>
-            <label style="display:flex; justify-content:space-between; font-size:0.8em;">Panel Layout <input type="color" id="color-bg-panel" value="#1e1e2d"></label>
-            <label style="display:flex; justify-content:space-between; font-size:0.8em;">System Accent <input type="color" id="color-accent" value="#0ebd84"></label>
-            <label style="display:flex; justify-content:space-between; font-size:0.8em;">Signal Bubble <input type="color" id="color-bubble" value="#1e1e2d"></label>
+        <div id="custom-color-controls" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;">
+            <label style="display:flex; justify-content:space-between; font-size:0.85em; opacity:0.9; align-items:center;">Main Background <input type="color" id="color-bg-main" value="#06060c" style="border:none; background:none; cursor:pointer;"></label>
+            <label style="display:flex; justify-content:space-between; font-size:0.85em; opacity:0.9; align-items:center;">Panel Sizing <input type="color" id="color-bg-panel" value="#0d0d19" style="border:none; background:none; cursor:pointer;"></label>
+            <label style="display:flex; justify-content:space-between; font-size:0.85em; opacity:0.9; align-items:center;">System Accent <input type="color" id="color-accent" value="#0ebd84" style="border:none; background:none; cursor:pointer;"></label>
+            <label style="display:flex; justify-content:space-between; font-size:0.85em; opacity:0.9; align-items:center;">Signal Bubble <input type="color" id="color-bubble" value="#161626" style="border:none; background:none; cursor:pointer;"></label>
         </div>
-        <button id="close-settings-btn" style="width:100%; background: rgba(255,255,255,0.05);">Close Options Dialog</button>
+        <button id="close-settings-btn" style="width:100%; background: rgba(255,255,255,0.05); font-weight: 600;">Save Configuration Layout</button>
     </div>
 
     <script src="meebo.js"></script>
