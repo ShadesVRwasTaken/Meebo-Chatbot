@@ -43,8 +43,8 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognition = null;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
-    recognition.continuous = false;
-    recognition.interimResults = false;
+    recognition.continuous = true;      // Prevent premature Chromebook cutoff pauses
+    recognition.interimResults = false;   // Process finalized cloud sentences only
     recognition.lang = 'en-US';
 }
 
@@ -239,10 +239,7 @@ function generateChaoticReply(words) {
         }
     }
     let sentence = [currentWord]; let wordPointer = currentWord;
-    
-    // Scale loop caps up 10x if long switch resolves true
     const loopLimit = longToggle && longToggle.checked ? 120 : 12;
-    
     for (let i = 0; i < loopLimit; i++) {
         const possibilities = currentBrainData.chaotic[wordPointer]; if (!possibilities || possibilities.length === 0) break;
         const nextWord = possibilities[Math.floor(Math.random() * possibilities.length)]; sentence.push(nextWord); wordPointer = nextWord.toLowerCase();
@@ -274,10 +271,7 @@ function generateGrammarReply(words) {
     if (keys.length === 0) return "Active profile requires more pairs. Teach me multiple word combos!";
     if (!key1 || !key2) { const randomKey = keys[Math.floor(Math.random() * keys.length)]; [key1, key2] = randomKey.split('__'); }
     let sentence = [key1, key2];
-    
-    // Scale loop caps up 10x if long switch resolves true
     const loopLimit = longToggle && longToggle.checked ? 140 : 14;
-
     for (let i = 0; i < loopLimit; i++) {
         const currentPair = `${key1}__${key2}`; const possibilities = currentBrainData.grammar[currentPair];
         if (!possibilities || possibilities.length === 0) break;
@@ -363,7 +357,7 @@ function speakMeeboText(textToSpeak, calculatedTone) {
     }
 }
 
-// meebo.js - Part 8: Chat Handlers, File Upload Profiles & Program Init
+// meebo.js - Part 8: Chat Handlers, File Upload Profiles & Chromebook Mic Config
 function appendMessage(sender, text, className) {
     const msgDiv = document.createElement('div'); msgDiv.className = `msg ${className}`; msgDiv.innerText = text;
     chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight;
@@ -418,15 +412,19 @@ if (recognition) {
                 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: true }); analyser = audioContext.createAnalyser(); analyser.fftSize = 256;
                 sourceNode = audioContext.createMediaStreamSource(micStream); sourceNode.connect(analyser); startAudioVisualizer("mic");
-            } catch(e) { console.error("Mic error", e); }
-            userInput.value = ""; userInput.placeholder = "Streaming audio input packets..."; micBtn.classList.add('listening');
-            try { recognition.start(); } catch(err) { micBtn.classList.remove('listening'); stopAudioVisualizer(); }
+                userInput.value = ""; userInput.placeholder = "🟢 Chromebook Mic Capturing sound. Speak now..."; micBtn.classList.add('listening');
+                setTimeout(() => { try { recognition.start(); } catch(err) { micBtn.classList.remove('listening'); stopAudioVisualizer(); } }, 100);
+            } catch(e) { appendMessage("System", "🚨 Chromebook blocked mic. Click the lock icon in your URL bar and click Allow!", "system-msg"); }
         }
     });
     recognition.onresult = (event) => {
         let transcript = event.results[event.results.length - 1].transcript; transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
-        userInput.value = transcript; userInput.placeholder = "Type or activate mic node to broadcast..."; stopAudioVisualizer();
-        if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } micBtn.classList.remove('listening'); if (userInput.value.trim() !== "") handleSend();
+        userInput.value = transcript; userInput.placeholder = "Type or activate mic node to broadcast..."; recognition.stop(); if (userInput.value.trim() !== "") handleSend();
+    };
+    recognition.onerror = (e) => { 
+        if (e.error === 'not-allowed') appendMessage("System", "🚨 ChromeOS Permissions Blocked: Mic permission is disabled.", "system-msg");
+        else if (e.error === 'network') appendMessage("System", "🚨 Network Fault: Speech engine requires connection to Google servers.", "system-msg");
+        recognition.stop(); 
     };
     recognition.onend = () => { micBtn.classList.remove('listening'); userInput.placeholder = "Type or activate mic node to broadcast..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 }
