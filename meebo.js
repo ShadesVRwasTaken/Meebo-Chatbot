@@ -422,7 +422,8 @@ if (recognition) {
         let finalTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal || event.results[i].confidence > 0) {
-                finalTranscript += event.results[i].transcript;
+                // FIXED: Added [0] alternative array accessor before calling .transcript
+                finalTranscript += event.results[i][0].transcript;
             }
         }
         if (finalTranscript.trim() !== "") {
