@@ -421,8 +421,8 @@ if (recognition) {
     recognition.onresult = (event) => {
         let finalTranscript = "";
         for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal || event.results[i].confidence > 0) {
-                // FIXED: Added [0] alternative array accessor before calling .transcript
+            if (event.results[i] && event.results[i][0]) {
+                // FIXED: alternative array level [0] targeting implemented
                 finalTranscript += event.results[i][0].transcript;
             }
         }
@@ -443,12 +443,22 @@ if (recognition) {
 }
 
 brainUpload.addEventListener('change', (event) => {
-    const files = event.target.files; if (!files || files.length === 0) return; const targetFile = files; const reader = new FileReader();
+    const files = event.target.files; if (!files || files.length === 0) return; 
+    // FIXED: Extracted actual file instance item[0] from targeted filelist array wrapper
+    const targetFile = files[0]; 
+    const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const uploadedJson = JSON.parse(e.target.result); const profileName = targetFile.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
-            if (!brainIndexList.includes(profileName)) { brainIndexList.push(profileName); localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); }
-            localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson)); activeBrainId = profileName; rebuildBrainDropdown(); loadActiveBrain();
+            const uploadedJson = JSON.parse(e.target.result); 
+            const profileName = targetFile.name.replace(".json", "").toLowerCase().replace(/[^a-z0-9]/g, "_");
+            if (!brainIndexList.includes(profileName)) { 
+                brainIndexList.push(profileName); 
+                localStorage.setItem('meebo_index_list', JSON.stringify(brainIndexList)); 
+            }
+            localStorage.setItem(`meebo_profile_${profileName}`, JSON.stringify(uploadedJson)); 
+            activeBrainId = profileName; 
+            rebuildBrainDropdown(); 
+            loadActiveBrain();
         } catch (err) { alert("Invalid data parameters."); }
     }; reader.readAsText(targetFile);
 });
