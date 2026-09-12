@@ -44,7 +44,7 @@ let recognition = null;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
     recognition.continuous = true;      // Prevent ChromeOS from pausing mid-stream
-    recognition.interimResults = false;   // Process finalized cloud strings only
+    recognition.interimResults = true;   // Capture live words as they spill out
     recognition.lang = 'en-US';
 }
 
@@ -417,17 +417,27 @@ if (recognition) {
             } catch(e) { appendMessage("System", "🚨 Chromebook blocked mic. Check the lock icon in your URL bar and click Allow!", "system-msg"); }
         }
     });
+
     recognition.onresult = (event) => {
-        let transcript = event.results[event.results.length - 1].transcript; transcript = transcript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
-        userInput.value = transcript; 
-        userInput.placeholder = "Review draft transmission packets above..."; 
-        recognition.stop();
+        let finalTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal || event.results[i].confidence > 0) {
+                finalTranscript += event.results[i].transcript;
+            }
+        }
+        if (finalTranscript.trim() !== "") {
+            let processedText = finalTranscript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo");
+            userInput.value = processedText; 
+            userInput.placeholder = "Review draft transmission packets above..."; 
+        }
     };
+
     recognition.onerror = (e) => { 
         if (e.error === 'not-allowed') appendMessage("System", "🚨 Permission Error: Mic context block triggered.", "system-msg");
         else if (e.error === 'network') appendMessage("System", "🚨 Server Network Error: ChromeOS connection to cloud translation dropped.", "system-msg");
         recognition.stop(); 
     };
+
     recognition.onend = () => { micBtn.classList.remove('listening'); if (userInput.value === "") userInput.placeholder = "Type or activate mic node to broadcast..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 }
 
