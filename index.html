@@ -3,25 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meebo Control Terminal v3.0</title>
+    <title>Meebo Messenger Terminal v3.0</title>
     <style>
         :root {
-            --bg-main: #06060c; --bg-panel: rgba(13,13,25,0.7); --border-color: rgba(255,255,255,0.05);
-            --accent-color: #0ebd84; --accent-hover: #0cb37d; --bubble-meebo: rgba(22,22,38,0.8); --bubble-text: #f1f1f1;
+            --bg-main: #0a0b10;
+            --bg-panel: rgba(20, 22, 37, 0.7);
+            --border-color: rgba(255, 255, 255, 0.06);
+            --accent-gradient: linear-gradient(135deg, #00f0ff 0%, #0ebd84 100%);
+            --bubble-gradient: linear-gradient(135deg, #1e223a 0%, #141625 100%);
+            --user-gradient: linear-gradient(135deg, #007aff 0%, #00c6ff 100%);
+            --meebo-gradient: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            --accent-color: #00f0ff;
+            --text-color: #f1f3f9;
         }
-        body { margin: 0; padding: 0; background-color: var(--bg-main); color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        body { margin: 0; padding: 0; background-color: var(--bg-main); color: var(--text-color); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display: flex; height: 100vh; overflow: hidden; }
         .wrapper { display: flex; width: 100%; height: 100%; }
-        .sidebar { width: 320px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; transition: width 0.3s ease; flex-shrink: 0; }
-        .chat-container { flex: 1; display: flex; flex-direction: column; padding: 20px; position: relative; min-width: 0; }
-        .control-group { margin-bottom: 14px; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .control-group h3 { margin: 0 0 10px 0; font-size: 0.9rem; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-color); }
-        select, button, input { width: 100%; padding: 10px; background: #111122; border: 1px solid var(--border-color); color: #fff; border-radius: 4px; font-family: monospace; box-sizing: border-box; margin-bottom: 8px; }
-        button { background: var(--accent-color); color: #000; font-weight: bold; cursor: pointer; border: none; transition: background 0.2s; }
-        button:hover { background: var(--accent-hover); }
-        .toggle-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem; font-family: monospace; }
-        .toggle-item input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; accent-color: var(--accent-color); }
-        .toggle-item.cyan-glowing { color: #00f0ff; }
+        .sidebar { width: 340px; background: var(--bg-panel); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 24px; box-sizing: border-box; transition: width 0.3s ease; flex-shrink: 0; backdrop-filter: blur(12px); }
+        .chat-container { flex: 1; display: flex; flex-direction: column; background: radial-gradient(circle at top right, rgba(0,240,255,0.03), transparent 40%), radial-gradient(circle at bottom left, rgba(14,189,132,0.03), transparent 40%); padding: 24px; position: relative; min-width: 0; }
+        .control-group { margin-bottom: 16px; background: rgba(255, 255, 255, 0.02); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .control-group h3 { margin: 0 0 12px 0; font-size: 0.8rem; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--accent-color); opacity: 0.9; }
+        select, button, input[type="text"] { width: 100%; padding: 12px 16px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color); color: #fff; border-radius: 8px; font-size: 0.9rem; box-sizing: border-box; margin-bottom: 8px; transition: all 0.2s ease; }
+        select:focus, input[type="text"]:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 8px rgba(0, 240, 255, 0.2); }
+        button { background: var(--accent-gradient); color: #020408; font-weight: 700; cursor: pointer; border: none; }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:active { transform: translateY(0); }
+
+        .toggle-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 0.85rem; font-weight: 500; }
+        .toggle-item input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-color); }
+        .toggle-item.cyan-glowing { color: #00f0ff; text-shadow: 0 0 10px rgba(0, 240, 255, 0.3); }
         .toggle-item.cyan-glowing input[type="checkbox"] { accent-color: #00f0ff; }
+        #chat-box { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding-bottom: 16px; box-sizing: border-box; padding-right: 8px; }
+        .msg { max-width: 70%; padding: 12px 18px; border-radius: 18px; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; animation: fadeInUp 0.25s ease-out forwards; }
+        .user-msg { background: var(--user-gradient); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2); }
+        .meebo-msg { background: var(--bubble-gradient); border: 1px solid var(--border-color); color: var(--text-color); align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .system-msg { background: transparent; color: #6e7185; font-size: 0.8rem; font-style: italic; text-align: center; align-self: center; max-width: 90%; border: none; padding: 4px; box-shadow: none; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         body.sidebar-fullscreen .sidebar { width: 100%; z-index: 10; }
         body.sidebar-fullscreen .chat-container { display: none; }
         body.chat-fullscreen .sidebar { display: none; }
@@ -29,112 +45,86 @@
 </head>
 <body>
     <div class="wrapper">
-        <!-- Sidebar Controls Area -->
         <div class="sidebar">
-            <h2 style="font-family: monospace; margin-top: 0; border-bottom: 2px solid var(--accent-color); padding-bottom: 8px;">Meebo HUD</h2>
+            <h2 style="margin-top: 0; margin-bottom: 20px; font-size: 1.4rem; font-weight: 800; background: var(--accent-gradient); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Meebo Terminal</h2>
             
             <div class="control-group">
-                <h3>Cognitive Brain Management</h3>
+                <h3>Active Intelligence Profile</h3>
                 <select id="brain-select"></select>
-                <div style="display: flex; gap: 4px;">
-                    <button id="rename-brain-btn" style="font-size: 0.8rem; padding: 6px;">✏ Rename</button>
-                    <button id="delete-brain-btn" style="font-size: 0.8rem; padding: 6px; background: #d93838; color: #fff;">❌ Delete</button>
+                <div style="display: flex; gap: 6px;">
+                    <button id="rename-brain-btn" style="font-size: 0.8rem; padding: 8px;">Rename</button>
+                    <button id="delete-brain-btn" style="font-size: 0.8rem; padding: 8px; background: #ff3b30; color: #fff;">Delete</button>
                 </div>
                 <input type="file" id="brain-upload" accept=".json" style="display: none;">
-                <button onclick="document.getElementById('brain-upload').click()" style="background: #333; color: #fff; font-size: 0.85rem; margin-top: 6px;">📂 Import JSON Profile</button>
+                <button onclick="document.getElementById('brain-upload').click()" style="background: rgba(255,255,255,0.05); color: #fff; font-size: 0.8rem; margin-top: 8px;">📂 Import JSON Profile</button>
             </div>
 
             <div class="control-group">
-                <h3>Generation Rules</h3>
+                <h3>Core Framework Rules</h3>
                 <select id="mode-select">
                     <option value="grammar">Grammar Engine (Proper)</option>
                     <option value="chaotic">Chaotic Matrix (Random)</option>
                 </select>
-                
-                <h3 style="margin-top: 10px;">Ingestion Strategy</h3>
-                <select id="learn-select">
+                <select id="learn-select" style="margin-top: 6px; margin-bottom: 0;">
                     <option value="adaptive">Adaptive Chat (Learn & Reply)</option>
                     <option value="silent">Silent Buffer (Learn Only)</option>
                 </select>
             </div>
 
             <div class="control-group">
-                <h3>System Parameters</h3>
-                <div style="font-size: 0.8rem; font-family: monospace; margin-bottom: 8px;">Stored Memory Keys: <span id="vocab-count" style="color: var(--accent-color);">0</span></div>
-                
-                <div class="toggle-item">
-                    <span>Audio Text-to-Speech</span>
-                    <input type="checkbox" id="tts-toggle" checked>
-                </div>
-                <div class="toggle-item">
-                    <span>Emotion Engine Vector</span>
-                    <input type="checkbox" id="emotion-toggle" checked>
-                </div>
-                <div class="toggle-item">
-                    <span>Smart Context Anchor</span>
-                    <input type="checkbox" id="smart-toggle" checked>
-                </div>
-                <div class="toggle-item cyan-glowing">
-                    <span>One Word Isolated Res</span>
-                    <input type="checkbox" id="one-word-toggle">
-                </div>
-                <div class="toggle-item">
-                    <span>Long Responses (10x Max)</span>
-                    <input type="checkbox" id="long-toggle">
-                </div>
+                <h3>System Matrix Parameters</h3>
+                <div style="font-size: 0.8rem; margin-bottom: 12px; opacity: 0.7;">Stored Memory Keys: <span id="vocab-count" style="color: var(--accent-color); font-weight: bold;">0</span></div>
+                <div class="toggle-item"><span>Audio Text-to-Speech</span><input type="checkbox" id="tts-toggle" checked></div>
+                <div class="toggle-item"><span>Emotion Engine Vector</span><input type="checkbox" id="emotion-toggle" checked></div>
+                <div class="toggle-item"><span>Smart Context Anchor</span><input type="checkbox" id="smart-toggle" checked></div>
+                <div class="toggle-item cyan-glowing"><span>One Word Isolated Res</span><input type="checkbox" id="one-word-toggle"></div>
+                <div class="toggle-item"><span>Long Responses (10x Max)</span><input type="checkbox" id="long-toggle"></div>
             </div>
 
-            <div style="display: flex; gap: 4px; margin-top: auto;">
-                <button id="toggle-explorer-btn" style="background: #223; color: #aaa; font-size: 0.8rem;">🔍 Explorer</button>
-                <button id="download-btn" style="background: #223; color: #aaa; font-size: 0.8rem;">💾 Export</button>
-                <button id="open-settings-btn" style="background: #223; color: #aaa; font-size: 0.8rem;">⚙ System</button>
+            <div style="display: flex; gap: 6px; margin-top: auto;">
+                <button id="toggle-explorer-btn" style="background: rgba(255,255,255,0.04); color: #ccc; font-size: 0.8rem;">Explorer</button>
+                <button id="download-btn" style="background: rgba(255,255,255,0.04); color: #ccc; font-size: 0.8rem;">Export</button>
+                <button id="open-settings-btn" style="background: rgba(255,255,255,0.04); color: #ccc; font-size: 0.8rem;">Themes</button>
             </div>
         </div>
 
-        <!-- Terminal Chat Output Container -->
         <div class="chat-container">
-            <div id="brain-explorer-container" style="display: none; position: absolute; top: 20px; left: 20px; right: 20px; bottom: 120px; background: rgba(5,5,10,0.95); border: 1px solid var(--accent-color); padding: 15px; border-radius: 6px; overflow-y: auto; z-index: 5; font-family: monospace; font-size: 0.85rem;"></div>
-            
-            <div id="chat-box" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; box-sizing: border-box;">
-                <div class="msg system-msg" style="color: #8a8a9e; font-style: italic; font-family: monospace;">Meebo Core OS initialized. Interface parameters online.</div>
+            <div id="brain-explorer-container" style="display: none; position: absolute; top: 24px; left: 24px; right: 24px; bottom: 130px; background: #0e1017; border: 1px solid var(--border-color); padding: 20px; border-radius: 16px; overflow-y: auto; z-index: 5; font-family: monospace; font-size: 0.85rem; box-shadow: 0 12px 36px rgba(0,0,0,0.5);"></div>
+            <div id="chat-box">
+                <div class="msg system-msg">Meebo Core OS initialized. Messenger environment active.</div>
             </div>
-
-            <canvas id="visualizer-canvas" style="display: none; width: 100%; height: 50px; background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 10px;"></canvas>
-
-            <div id="emoji-panel" style="display: flex; gap: 4px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 4px;"></div>
-            
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <button id="mic-btn" style="width: 50px; background: #222c2a; color: #fff;">🎙</button>
-                <input type="text" id="user-input" placeholder="Type or activate mic node to broadcast..." style="margin-bottom: 0;">
-                <button id="send-btn" style="width: 80px;">Send</button>
+            <canvas id="visualizer-canvas" style="display: none; width: 100%; height: 40px; background: rgba(0,0,0,0.2); border-radius: 8px; margin-bottom: 12px;"></canvas>
+            <div id="emoji-panel" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 4px;"></div>
+            <div style="display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 14px; border: 1px solid var(--border-color);">
+                <button id="mic-btn" style="width: 46px; height: 44px; background: rgba(255,255,255,0.05); color: #fff; border-radius: 10px; font-size: 1.1rem; padding: 0;">🎙</button>
+                <input type="text" id="user-input" placeholder="Write a message down..." style="margin-bottom: 0; background: transparent; border: none; flex: 1; padding: 10px 4px;">
+                <button id="send-btn" style="width: 80px; height: 44px; border-radius: 10px;">Send</button>
             </div>
-
-            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.75rem;">
-                <span id="expand-sidebar-btn" style="cursor: pointer; color: #8a8a9e;">⛶ Full Control</span>
-                <span id="expand-chat-btn" style="cursor: pointer; color: #8a8a9e;">⛶ Full Terminal</span>
-                <span id="global-exit-btn" style="cursor: pointer; color: #d93838;">✕ Minimize</span>
+            <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.75rem; color: #5f627a;">
+                <span id="expand-sidebar-btn" style="cursor: pointer;">⛶ Panel Mode</span>
+                <span id="expand-chat-btn" style="cursor: pointer;">⛶ Chat Focus</span>
+                <span id="global-exit-btn" style="cursor: pointer; color: #ff3b30;">✕ Standard View</span>
             </div>
         </div>
     </div>
 
-    <!-- Hidden Settings Panel Modal -->
-    <div id="settings-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #0c0c14; border: 1px solid #222; padding: 25px; border-radius: 8px; z-index: 100; width: 300px;">
-        <h3 style="margin-top:0; color: var(--accent-color);">Environment Customizer</h3>
-        <label style="font-size: 0.8rem; display:block; margin-bottom:4px;">Theme Preset Profile</label>
-        <select id="theme-presets-select" style="margin-bottom:12px;">
+    <!-- Themes System Modal -->
+    <div id="settings-modal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #121424; border: 1px solid var(--border-color); padding: 24px; border-radius: 16px; z-index: 100; width: 320px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+        <h3 style="margin-top:0; color: var(--accent-color); font-size: 1.1rem; margin-bottom: 16px;">Core Presets Layout</h3>
+        <select id="theme-presets-select" style="margin-bottom:16px;">
             <option value="emerald">Emerald Core</option>
             <option value="cyberpunk">Cyberpunk Neon</option>
             <option value="midnight">Midnight Violet</option>
             <option value="monochrome">Matrix Monochrome</option>
             <option value="custom">User Generated Custom</option>
         </select>
-        <div id="custom-color-controls" style="opacity: 0.4; pointer-events: none;">
-            <label style="font-size: 0.75rem;">Main Background</label><input type="color" id="color-bg-main" value="#06060c">
-            <label style="font-size: 0.75rem;">Panel Sizing</label><input type="color" id="color-bg-panel" value="#0d0d19">
-            <label style="font-size: 0.75rem;">System Accent</label><input type="color" id="color-accent" value="#0ebd84">
-            <label style="font-size: 0.75rem;">Signal Bubble</label><input type="color" id="color-bubble" value="#161626">
+        <div id="custom-color-controls" style="opacity: 0.4; pointer-events: none; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.8rem;">Background</span><input type="color" id="color-bg-main" value="#0a0b10"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.8rem;">Control Grid</span><input type="color" id="color-bg-panel" value="#141625"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.8rem;">Accent Light</span><input type="color" id="color-accent" value="#00f0ff"></div>
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-size:0.8rem;">Bubble Fill</span><input type="color" id="color-bubble" value="#1e223a"></div>
         </div>
-        <button id="close-settings-btn" style="margin-top:10px; background:#334;">Close Settings</button>
+        <button id="close-settings-btn" style="margin-top:20px; background: rgba(255,255,255,0.06); color: #fff; border-radius: 8px;">Close Settings</button>
     </div>
 
     <script src="meebo.js"></script>

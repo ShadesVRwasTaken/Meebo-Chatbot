@@ -44,8 +44,8 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognition = null;
 if (SpeechRecognition) {
     recognition = new SpeechRecognition();
-    recognition.continuous = true;      // Prevent ChromeOS pausing mid-stream
-    recognition.interimResults = true;   // Capture live intermediate tokens
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.lang = 'en-US';
 }
 
@@ -106,19 +106,17 @@ if (colorBubble) colorBubble.addEventListener('input', saveCustomColors);
 
 expandSidebarBtn.addEventListener('click', () => {
     document.body.classList.toggle('sidebar-fullscreen'); document.body.classList.remove('chat-fullscreen');
-    expandSidebarBtn.innerText = document.body.classList.contains('sidebar-fullscreen') ? "✕ Minimize" : "⛶ Full Control";
-    expandChatBtn.innerText = "⛶ Full Terminal";
+    expandSidebarBtn.innerText = document.body.classList.contains('sidebar-fullscreen') ? "✕ Close Control" : "⛶ Panel Mode";
 });
 
 expandChatBtn.addEventListener('click', () => {
     document.body.classList.toggle('chat-fullscreen'); document.body.classList.remove('sidebar-fullscreen');
-    expandChatBtn.innerText = document.body.classList.contains('chat-fullscreen') ? "✕ Minimize" : "⛶ Full Terminal";
-    expandSidebarBtn.innerText = "⛶ Full Control";
+    expandChatBtn.innerText = document.body.classList.contains('chat-fullscreen') ? "✕ Close Focus" : "⛶ Chat Focus";
 });
 
 globalExitBtn.addEventListener('click', () => {
     document.body.classList.remove('sidebar-fullscreen', 'chat-fullscreen');
-    expandChatBtn.innerText = "⛶ Full Terminal"; expandSidebarBtn.innerText = "⛶ Full Control";
+    expandChatBtn.innerText = "⛶ Chat Focus"; expandSidebarBtn.innerText = "⛶ Panel Mode";
 });
 
 function loadSavedThemeSettings() {
@@ -191,9 +189,8 @@ function learnFromSentence(text) {
     if (text.toLowerCase().trim() === "meebo wipe memory") return;
     const words = text.trim().split(/\s+/); if (words.length === 0) return;
 
-    // Track unassociated single word captures directly to memory
     if (words.length === 1) {
-        const singleWord = words[0].toLowerCase();
+        const singleWord = words.toLowerCase();
         if (!currentBrainData.chaotic[singleWord]) { currentBrainData.chaotic[singleWord] = []; }
     }
 
@@ -203,7 +200,6 @@ function learnFromSentence(text) {
         if (!currentBrainData.chaotic[currentWord].includes(nextWord)) currentBrainData.chaotic[currentWord].push(nextWord);
     }
 
-    // Register terminal word of sequence to catch isolated lookups
     const finalWord = words[words.length - 1].toLowerCase();
     if (!currentBrainData.chaotic[finalWord]) { currentBrainData.chaotic[finalWord] = []; }
 
@@ -222,7 +218,6 @@ function learnFromSentence(text) {
 function generateChaoticReply(words) {
     let currentWord = ""; const cleanSpokenWords = words.map(w => w.toLowerCase());
     
-    // Scan input words for completely unassociated words if one-word mode is checked
     if (oneWordToggle && oneWordToggle.checked) {
         const isolatedOptions = cleanSpokenWords.filter(w => currentBrainData.chaotic[w] && currentBrainData.chaotic[w].length === 0);
         if (isolatedOptions.length > 0) {
@@ -238,7 +233,7 @@ function generateChaoticReply(words) {
         const userSelection = cleanSpokenWords.filter(w => w.replace(/[^a-z]/g, "").length > 0);
         if (userSelection.length > 0) currentWord = userSelection[Math.floor(Math.random() * userSelection.length)];
         if (!currentWord || !currentBrainData.chaotic[currentWord]) {
-            const keys = Object.keys(currentBrainData.chaotic); if (keys.length === 0) return "Active profile's memory paths are empty...";
+            const keys = Object.keys(currentBrainData.chaotic); if (keys.length === 0) return "Memory paths are empty...";
             if (oneWordToggle && oneWordToggle.checked) {
                 const isolatedKeys = keys.filter(k => currentBrainData.chaotic[k].length === 0);
                 currentWord = isolatedKeys.length > 0 ? isolatedKeys[Math.floor(Math.random() * isolatedKeys.length)] : keys[Math.floor(Math.random() * keys.length)];
@@ -295,7 +290,7 @@ function generateGrammarReply(words) {
 function startAudioVisualizer(type, calculatedTone = "neutral") {
     isVisualizerActive = true; canvas.style.display = "block";
     canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
-    const waveColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || "#0ebd84";
+    const waveColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color').trim() || "#00f0ff";
 
     function drawLoop() {
         if (!isVisualizerActive) return; animationFrameId = requestAnimationFrame(drawLoop);
@@ -343,14 +338,14 @@ function speakMeeboText(textToSpeak, calculatedTone) {
 }
 
 // meebo.js - Part 9: Message Appenders, File Upload Hubs & Event Hook Bindings
-function appendMessage(sender, text, className) { const msgDiv = document.createElement('div'); msgDiv.className = `msg ${className}`; msgDiv.innerText = `${sender}: ${text}`; chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight; }
+function appendMessage(sender, text, className) { const msgDiv = document.createElement('div'); msgDiv.className = `msg ${className}`; msgDiv.innerText = text; chatBox.appendChild(msgDiv); chatBox.scrollTop = chatBox.scrollHeight; }
 function renderBrainExplorer() {
     const selectedMode = modeSelect.value; const targetData = currentBrainData[selectedMode] || {}; const keys = Object.keys(targetData).sort();
     if (keys.length === 0) { explorerContainer.innerHTML = `<div style="color: #8a8a9e; font-style: italic; padding: 5px;">The [${selectedMode}] JSON dictionary is empty.</div>`; return; }
     explorerContainer.innerHTML = `<div style="color: #8a8a9e; margin-bottom: 8px; font-weight: bold; font-family: monospace;">json_structure: brain.${selectedMode}</div>`;
     keys.forEach(key => {
         const nodeDiv = document.createElement('div'); nodeDiv.className = 'brain-node'; const keySpan = document.createElement('span'); keySpan.className = 'brain-key'; const formattedKey = key.includes('__') ? `"${key.replace(/__/g, ' ')}"` : `"${key}"`; keySpan.innerText = `${formattedKey}: `;
-        const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-values'; valuesDiv.style.color = "#0ebd84"; valuesDiv.innerText = JSON.stringify(targetData[key]);
+        const valuesDiv = document.createElement('div'); valuesDiv.className = 'brain-values'; valuesDiv.style.color = "#00f0ff"; valuesDiv.innerText = JSON.stringify(targetData[key]);
         keySpan.addEventListener('click', () => nodeDiv.classList.toggle('expanded')); nodeDiv.appendChild(keySpan); nodeDiv.appendChild(valuesDiv); explorerContainer.appendChild(nodeDiv);
     });
 }
@@ -365,8 +360,7 @@ function handleSend() {
             const words = text.trim().split(/\s+/); const currentTone = analyzeInputTone(text); let activeMode = modeSelect.value;
             if (emotionToggle.checked) { if (currentTone === "angry") activeMode = "chaotic"; if (currentTone === "kind") activeMode = "grammar"; }
             const reply = activeMode === "chaotic" ? generateChaoticReply(words) : generateGrammarReply(words);
-            let emotionLabel = (emotionToggle.checked && currentTone !== "neutral") ? ` [Tone: ${currentTone.toUpperCase()}]` : "";
-            appendMessage("Meebo" + emotionLabel, reply, "meebo-msg"); speakMeeboText(reply, currentTone);
+            appendMessage("Meebo", reply, "meebo-msg"); speakMeeboText(reply, currentTone);
         }, 400);
     }
 }
@@ -395,7 +389,7 @@ if (recognition) {
         if (finalTranscript.trim() !== "") { let processedText = finalTranscript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo"); userInput.value = processedText; }
     };
     recognition.onerror = () => { recognition.stop(); };
-    recognition.onend = () => { micBtn.classList.remove('listening'); if (userInput.value === "") userInput.placeholder = "Type or broadcast..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
+    recognition.onend = () => { micBtn.classList.remove('listening'); if (userInput.value === "") userInput.placeholder = "Write a message down..."; stopAudioVisualizer(); if (micStream) { micStream.getTracks().forEach(track => track.stop()); micStream = null; } };
 }
 
 brainUpload.addEventListener('change', (event) => {
