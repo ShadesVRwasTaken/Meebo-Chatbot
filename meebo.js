@@ -391,7 +391,7 @@ if (recognition) {
         }
     });
     recognition.onresult = (event) => {
-        let finalTranscript = ""; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i] && event.results[i]) { finalTranscript += event.results[i].transcript; } }
+        let finalTranscript = ""; for (let i = event.resultIndex; i < event.results.length; ++i) { if (event.results[i] && event.results[i][0]) { finalTranscript += event.results[i][0].transcript; } }
         if (finalTranscript.trim() !== "") { let processedText = finalTranscript.replace(/\bamiibo\b/gi, "Meebo").replace(/\bameebo\b/gi, "Meebo"); userInput.value = processedText; }
     };
     recognition.onerror = () => { recognition.stop(); };
